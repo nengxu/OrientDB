@@ -1,0 +1,33 @@
+#summary SQL Insert
+#labels sql
+
+The *SQL Insert* command creates a new record into the database. Records can be schema-less.
+
+== Syntax ==
+
+{{{INSERT INTO <Class>|cluster:<cluster>|index:<index> [(<field>[,]*) VALUES (<expression>[,]*)]|[SET <field> = <expression>[,]*]}}}
+
+== Examples ==
+
+Insert a new record with name 'Jay' and surname 'Miner':
+
+{{{insert into Profile (name, surname) values ('Jay', 'Miner' )}}}
+
+{{{insert into Profile SET name = 'Jay', surname = 'Miner'}}}
+
+
+Insert a new record adding a relationship:
+
+{{{insert into Employee (name, boss) values ('jack', 11:99 )}}}
+
+{{{insert into Employee SET name = 'jack', boss = 11:99 )}}}
+
+
+Insert a new record adding a collection of relationship:
+
+{{{insert into Profile (name, friends) values ('Luca', [10:3, 10:4] )}}}
+
+{{{insert into Profile SET name = 'Luca', friends =  [10:3, 10:4]}}}
+
+
+To know more about other SQL commands look at [SQL SQL commands].

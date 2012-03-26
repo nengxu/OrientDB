@@ -1,0 +1,29 @@
+#summary Console command: config set
+#labels console
+
+= Config Set =
+
+Change the value of a property.
+
+== Syntax ==
+
+{{{config set <config-name> <config-value>}}}
+
+Where:
+
+ * config-name  Name of the configuration to change
+ * config-value Value to set
+
+== Example ==
+
+{{{
+> config set db.cache.enabled false
+
+Remote configuration value changed correctly
+}}}
+
+== See also ==
+
+To know all the configuration values use the [ConsoleCommandConfig config]. To read a configuration value use the [ConsoleCommandConfigGet config get].
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

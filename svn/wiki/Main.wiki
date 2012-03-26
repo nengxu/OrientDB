@@ -1,0 +1,98 @@
+#summary Main WIKI page
+#labels Featured
+
+For any question visit the [http://groups.google.com/group/orient-database OrientDB User Group]. To look at the future of OrientDB please consult the [Roadmap].
+
+This is the summary of the documentation about Orient DB project.
+
+ * [Presentations] - [Tutorials]
+  * [http://www.snoopal.com/search?fulltext=orientdb&x=0&y=0&pageSize=&page=&category=&mimetype=&language=&sort=&sortDirection= Presentations of OrientDB on Snoopal document platform]
+ * [Download]
+ * [http://datastorm.com.ua/jenkins/ Continuous integration] kindly hosted and managed by Andrey Lomakin
+ * [Installation]
+ * [Architecture]
+ * [Production_deployments Who is using OrientDB in production?] here some case stories
+ * [Concepts]
+  * [Concepts#Database_URL URL], [Concepts#Record Record], [Concepts#Document Document], [Concepts#RecordID RecordID], [Concepts#Class Class], [Concepts#Relationships Relationships], [Concepts#Database Database], [Concepts#Storage Storage], [Concepts#Cluster Cluster], [Concepts#Data_Segment Data Segment]
+ * Hot Topics
+  * All the [Types Supported types]
+  * Object Oriented [Inheritance]
+  * [Security] architecture
+  * [Indexes] to speed up searches
+  * [Caching] levels
+  * [Clustering] more OrientDB servers all together
+  * [Logging] strategies
+  * ACID [Transactions]
+  * [MemoryManagement Memory Management]
+  * [BinaryData Binary data management (BLOB)]
+ * [ProgrammingLanguageBindings Drivers and Language Bindings (supported programming languages)] - [Plugins]
+ * [PerformanceTuning Configuration and Performance tuning]
+ * [ImportFromRDBMS Import from RDBMS], how to import Relational exports
+ * [Troubleshooting]
+  * [TroubleshootingJava Troubleshooting Java API]
+
+ * API
+  * [JavaAPI Java APIs]
+   * [http://www.orientechnologies.com/releases/latest/javadoc/index.html?com/orientechnologies/orient/core/db/document/ODatabaseDocumentTx.html JavaDoc (latest version)]
+   * [DocumentDatabase Document Database]
+   * [ObjectDatabase Object Database]
+    * [Object2RecordJavaBinding Object to record Java binding]
+   * [GraphDatabase]
+    * [GraphDatabaseRaw Native raw implementation]
+    * [GraphDatabaseTinkerpop Tinkerpop implementation] with the usage of Gremlin language
+   * [JavaWebApps Use it from Java Web Applications]
+   * [ServerManagementJava Manage remote server instance via API]
+   * [JavaMultiThreading Multi Threading]
+   * [FetchingStrategies Fetching strategies]
+   * [Schema Manage the Schema]
+   * [Hook Hooks - Triggers]
+   * [EmbeddedServer Embed the Server]
+   * [TroubleshootingJava Troubleshooting Java API]
+  * [ScalaLanguage Scala API]
+  * [JavascriptAPI Javascript API]
+  * [OrientDB_REST HTTP RESTful API]
+
+ * [SQL SQL]
+  * [SQLWhere SQL expression syntax] - [SQLWhere#Operators Operators] - [SQLWhere#Functions Functions]
+  * [SQLQuery Select] used as command and for queries
+  * [SQLTraverse Traverse] to cross records by relationships
+  * [SQLInsert Insert] to insert new records
+  * [SQLUpdate Update] to update one or more records
+  * [SQLDelete Delete] to delete one or more records
+  * [SQLTruncateClass Truncate Class], [SQLTruncateCluster Truncate Cluster], [SQLTruncateRecord Truncate Record]
+  * [SQLGrant Grant] and [SQLRevoke Revoke]
+  * [SQLCreateClass Create Class], [SQLAlterClass Alter Class], [SQLRemoveClass Drop Class], [SQLCreateProperty Create Property], [SQLAlterProperty Alter Property], [SQLRemoveProperty Drop Property]
+  * [SQLCreateIndex Create Index], [SQLRebuildIndex Rebuild Index], [SQLRemoveIndex Drop Index]
+  * [SQLCreateLink Create Link]
+  * [SQLFindReferences Find References]
+  * [SQLAlterDatabase Alter Database], [SQLAlterCluster Alter Cluster]
+  * [Pagination]
+  * [SQLSyntax Syntax]
+
+ * TinkerPop integration and support
+  * [GraphDatabaseTinkerpop Tinkerpop implementation] with the usage  
+  * [Rexster Rexster Support and configuration]
+  * [Gremlin] usage
+
+ * [DBServer DB Server] - ([http://code.google.com/p/orient/issues/list?can=2&q=db&colspec=ID+Type+Status+Priority+Milestone+Owner+Summary&cells=tiles roadmap] - [http://code.google.com/p/orient/source/browse/trunk/history-db.txt history])
+  * [AutomaticBackup Automatic backup]
+  * [OrientDB_REST HTTP RESTful Protocol]
+  * [NetworkBinaryProtocol Network BINARY protocol]
+  * [WrappingAsAWindowsService Wrapping as a Windows Service]
+
+ * [OrientDB_Studio OrientDB Studio app]
+
+ * [ConsoleCommands Console]
+  * [ConsoleCommandConnect Connect], [ConsoleCommandDisconnect Disconnect]
+  * [ConsoleCommandCreateDb Create Database], [ConsoleCommandDropDb Drop Database]
+  * [ConsoleCommandCreateCluster Create Cluster], [ConsoleCommandDropCluster Drop Cluster]
+  * [ConsoleCommandInfo Info], [ConsoleCommandInfoClass Info Class], [ConsoleCommandClasses Classes], [ConsoleCommandClusters Clusters]
+  * [ConsoleCommandBrowseCluster Browse Cluster], [ConsoleCommandBrowseClass Browse Class]
+  * [ConsoleCommandDictionaryKeys Dictionary Keys], [ConsoleCommandDictionaryGet Dictionary Get], [ConsoleCommandDictionaryPut Dictionary Put], [ConsoleCommandDictionaryRemove Dictionary Remove]
+  * [ConsoleCommandLoadRecord Load Record], [ConsoleCommandReloadRecord Reload Record], [ConsoleCommandDisplayRecord Display Record], [ConsoleCommandExportRecord Export Record]
+  * [ConsoleCommandExport Export database], [ConsoleCommandImport  Import database]
+  * [ConsoleCommandConfig Config], [ConsoleCommandConfigGet Config Get], [ConsoleCommandConfigSet Config Set]
+  * [ConsoleCommandProfiler Profiler], [ConsoleCommandDeclareIntent Declare Intent], [ConsoleCommandProperties Properties], [ConsoleCommandGet Get], [ConsoleCommandSet Set]
+  * [ConsoleCommandShareDatabase Share Database]
+
+So many Open Source projects lack documentation. Please help us to improve it by writing to the [http://groups.google.com/group/orient-database Group]!

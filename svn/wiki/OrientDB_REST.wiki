@@ -1,0 +1,591 @@
+#summary OrientDB RESTful HTTP Protocol
+#labels http,rest,protocol
+
+<wiki:toc max_depth="3" />
+
+= Introduction = 
+
+OrientDB RESTful HTTP protocol allows to talk with a [DBServer OrientDB Server instance] using the [http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol HTTP protocol]. OrientDB supports also a highly optimized [NetworkBinaryProtocol Binary protocol] for superior performances.
+
+Language binding that use REST protocol:
+
+ * *[https://github.com/emehrkay/Compass Python]*
+ * *[http://code.google.com/p/orient/wiki/JavascriptAPI Javascript]*
+
+== Methods ==
+
+This protocol uses the four methods of the HTTP protocol:
+
+ * *GET*, to retrieve values from the database. It's idempotents that means no changes to the database happen. Remember that in IE6 the URL can be maximum of 2,083 characters. Other browsers supports major length, but if you want to stay compatible with all limit to 2,083 characters
+ * *POST*, to insert values into the database
+ * *PUT*, to change values into the database
+ * *DELETE*, to delete values from the database
+
+== Syntax ==
+
+The REST syntax used is the same for all the four HTTP methods:
+
+Syntax: {{{http://<server>:<port>/<command>/[<database>/<arguments>]}}}
+
+Results are always in [http://en.wikipedia.org/wiki/JSON JSON] format. To specify an inner object is a document, the attribute {{{@type : 'd'}}} is needed. Example:
+
+{{{
+{
+  "@type"  : "d"
+  "Name"   : "Test",
+  "Data"   : { "@type": "d",
+               "value": 0 },
+  "@class" : "SimpleEntity"
+}
+}}}
+
+[http://en.wikipedia.org/wiki/JSONP JSONP] is also supported by adding a _callback_ parameter to the request (containing the callback function name).
+
+Syntax: {{{http://<server>:<port>/<command>/[<database>/<arguments>]?callback=<callbackFunctionName>}}}
+
+Commands are divided in three main categories:
+ * Server commands, such as to know server statistics and to create a new database
+ * Database commands, all the commands against a database
+
+== Authentication and security ==
+
+All the commands (but the [#Disconnect Disconnect]) need a valid authentication before to get executed. The OrientDB Server checks if the Authorization HTTP header is present, otherwise answers with a request of authentication (HTTP error code: 401).
+
+The HTTP client (or the Internet Browser) must send user and password using the HTTP Base authentication. Password is encoded using Base64 algorithm. Please note that if you want to enchrypt the password using a safe mode take in consideration to use SSL connections.
+
+Server commands use the realm "OrientDB Server", while the database commands use a realm per database in this form: {{{"OrientDB db-<database>"}}}, where {{{<database>}}} is the database name. In this way the Browser/HTTP client can reuse user and password inserted multiple times until the session expires or the "Disconnect" is called.
+
+= HTTP commands =
+== Connect ==
+=== GET - Connect ===
+Syntax: {{{http://<server>:[<port>]/connect/<database>}}}
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/connect/demo}}}
+HTTP response:
+{{{
+{"classes": [
+    {
+      "id": 0, 
+      "name": "ORole", 
+      "clusters": [3], 
+      "defaultCluster": 3, "records": 0}, 
+...
+}}}
+
+
+== Class ==
+=== GET - Class ===
+Gets informations about requested class.
+
+Syntax: {{{http://<server>:[<port>]/class/<database>/<class-name>[/<limit>]}}}
+
+Where {{{<limit>}}} is optional and tells the maximum of records to load. Default is 20.
+
+Sends class schema information, appends records results if found.
+
+==== Example with no records ====
+HTTP GET request: {{{http://localhost:2480/class/demo/Address}}}
+HTTP response:
+{{{
+{ "schema": {
+    "id": 5, 
+    "name": "Address"
+    ...
+  }
+}
+}}}
+
+==== Example with records ====
+HTTP GET request: {{{http://localhost:2480/class/demo/Address}}}
+HTTP response:
+{{{
+{ "schema": {
+    "id": 5, 
+    "name": "Address"
+  }, 
+  "result": [{
+      "_id": "11:0", 
+      "_ver": 0, 
+      "_class": "Address", 
+      "type": "Residence", 
+      "street": "Piazza Navona, 1", 
+      "city": "12:0"
+    }
+...
+}}}
+
+*before v1.0rc7*
+
+Browse the records of the requested class, returns empty data if no records found.
+
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/class/demo/Address}}}
+HTTP response:
+{{{
+{ "schema": {
+    "id": 5, 
+    "name": "Address"
+  }, 
+  "result": [{
+      "_id": "11:0", 
+      "_ver": 0, 
+      "_class": "Address", 
+      "type": "Residence", 
+      "street": "Piazza Navona, 1", 
+      "city": "12:0"
+    }
+...
+}}}
+=== POST - Class ===
+Create a new class. Returns the id of the new class created.
+
+Syntax: {{{http://<server>:[<port>]/class/<database>/<class-name>}}}
+
+==== Example ====
+HTTP POST request: {{{http://localhost:2480/class/demo/Address2}}}
+HTTP response: {{{9}}}
+
+== Property ==
+=== POST - Property ===
+Create one ore more properties into a given class. Returns the number of properties of the class.
+
+*Single property creation*<br/>
+Syntax: {{{http://<server>:[<port>]/property/<database>/<class-name>/<property-name>/[<property-type>]}}}
+
+Creates a property named {{{<property-name>}}} in {{{<class-name>}}}. If {{{<property-type>}}} is not specified the property will be created as STRING.
+<br/><br/>
+*Multiple property creation*<br/>
+Syntax: {{{http://<server>:[<port>]/property/<database>/<class-name>/}}}<br/>
+_Requires a JSON document post request content_:
+{{{
+{
+    "fieldName": {
+        "propertyType": "<property-type>"
+    },
+    "fieldName": {
+        "propertyType": "LINK",
+        "linkedClass": "<linked-class>"
+    },
+    "fieldName": {
+        "propertyType": "<LINKMAP|LINKLIST|LINKSET>",
+        "linkedClass": "<linked-class>"
+    },
+    "fieldName": {
+        "propertyType": "<LINKMAP|LINKLIST|LINKSET>",
+        "linkedType": "<linked-type>"
+    }
+}
+}}}
+<br/><br/>
+==== Example ====
+_Single property_:
+
+String Property Example:<br/>
+HTTP POST request: {{{http://localhost:2480/class/demo/simpleField}}}<br/>
+HTTP response: {{{1}}}
+
+Type Property Example:<br/>
+HTTP POST request: {{{http://localhost:2480/class/demo/dateField/DATE}}}<br/>
+HTTP response: {{{1}}}
+
+Link Property Example:<br/>
+HTTP POST request: {{{http://localhost:2480/class/demo/linkField/LINK/Person}}}<br/>
+HTTP response: {{{1}}}<br/>
+
+
+_Multiple properties_:<br/>
+HTTP POST request: {{{http://localhost:2480/class/demo/}}}<br/>
+HTTP POST content:<br/>
+{{{
+{
+    "name": {
+        "propertyType": "STRING"
+    },
+    "father": {
+        "propertyType": "LINK",
+        "linkedClass": "Person"
+    },
+    "addresses": {
+        "propertyType": "LINKMAP",
+        "linkedClass": "Address"
+    },
+    "examsRatings": {
+        "propertyType": "LINKMAP",
+        "linkedType": "INTEGER"
+    }
+    "events": {
+        "propertyType": "LINKLIST",
+        "linkedType": "DATE"
+    }
+    "family": {
+        "propertyType": "LINKLIST",
+        "linkedClass": "Person"
+    }
+...
+}}}
+HTTP response: {{{6}}}
+
+== Cluster ==
+=== GET - Cluster ===
+Browse the records of the requested cluster.
+
+Syntax: {{{http://<server>:[<port>]/cluster/<database>/<class-name>[/<limit>]}}}
+
+Where {{{<limit>}}} is optional and tells the maximum of records to load. Default is 20.
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/cluster/demo/Address}}}
+HTTP response:
+{{{
+{ "schema": {
+    "id": 5, 
+    "name": "Address"
+  }, 
+  "result": [{
+      "_id": "11:0", 
+      "_ver": 0, 
+      "_class": "Address", 
+      "type": "Residence", 
+      "street": "Piazza Navona, 1", 
+      "city": "12:0"
+    }
+...
+}}}
+
+== Command==
+=== POST - Command ===
+Execute a SQL command against the database. Returns the records affected or the list of records for queries. In the future other languages will be supported.
+
+Syntax: {{{http://<server>:[<port>]/command/<database>/sql[/<command-text>]}}}
+        {{{content: <command-text>}}}
+==== Example ====
+HTTP POST request: {{{http://localhost:2480/command/demo/sql}}}
+       {{{content: update Profile set online = false}}}
+HTTP response: {{{10}}}
+
+Or the same:
+
+HTTP POST request: {{{http://localhost:2480/command/demo/sql/update Profile set online = false}}}
+HTTP response: {{{10}}}
+
+== Database ==
+=== GET - Database ===
+Retrieve all the information about a database.
+
+Syntax: {{{http://<server>:[<port>]/database/<database>}}}
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/database/demo}}}
+HTTP response:
+{{{
+{"classes": [
+    {
+      "id": 0, 
+      "name": "ORole", 
+      "clusters": [3], 
+      "defaultCluster": 3, "records": 0}, 
+    {
+      "id": 1, 
+      "name": "OUser", 
+      "clusters": [4], 
+      "defaultCluster": 4, "records": 0}, 
+    {
+...
+}}}
+=== POST - Database ===
+Create a new database. Requires additional authentication to the server.
+
+Syntax: {{{http://<server>:[<port>]/database/<databaseName>/<type>}}}
+<br />Storage allowed types:
+  * 'local' for disk-based database
+  * 'memory' for in memory only database. 
+==== Example ====
+HTTP POST request: {{{http://localhost:2480/database/demo2/local}}}
+HTTP response:
+{{{
+{"classes": [
+    {
+      "id": 0, 
+      "name": "ORole", 
+      "clusters": [3], 
+      "defaultCluster": 3, "records": 0}, 
+    {
+      "id": 1, 
+      "name": "OUser", 
+      "clusters": [4], 
+      "defaultCluster": 4, "records": 0}, 
+    {
+...
+}}}
+
+== Export ==
+=== GET - Export ===
+Exports a gzip file that contains the database JSON export.
+
+Syntax: {{{http://<server>:[<port>]/export/<database>}}}
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/export/demo2}}}
+HTTP response: demo2.gzip file
+
+== Import ==
+=== POST - Import ===
+Imports a database from an uploaded JSON text file.
+
+Syntax: {{{http://<server>:[<port>]/export/<database>}}}
+
+*Important*: Connect required: the connection with the selected database must be already established
+==== Example ====
+HTTP POST request: {{{http://localhost:2480/import/}}}<br/>
+HTTP response: returns a JSON object containing the result text<br/>
+_Success_:
+{{{
+{
+"responseText": "Database imported correctly"
+}
+}}}
+
+_Fail::
+{{{
+{
+"responseText": "Error message"
+}
+}}}
+
+== Disconnect ==
+=== GET - Disconnect ===
+Syntax: {{{http://<server>:[<port>]/disconnect}}}
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/disconnect}}}
+HTTP response: empty.
+
+== Document ==
+=== GET - Document ===
+Retrieve a document.
+
+Syntax: {{{http://<server>:[<port>]/document/<database>/<record-id>[/<fetchPlan>]}}}<br/>
+See [http://code.google.com/p/orient/wiki/FetchingStrategies Fetching Strategies]
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/document/demo/9:0}}}
+HTTP response:
+{{{
+{
+  "_id": "9:0", 
+  "_ver": 2, 
+  "_class": "Profile", 
+  "nick": "GGaribaldi", 
+  "followings": [], 
+  "followers": [], 
+  "name": "Giuseppe", 
+  "surname": "Garibaldi", 
+  "location": "11:0", 
+  "invitedBy": null, 
+  "sex": "male", 
+  "online": true
+}
+}}}
+=== POST - Document ===
+Create a new document. Returns the Record-id assigned.
+
+Syntax: {{{http://<server>:[<port>]/document/<database>/<record-id>}}}
+==== Example ====
+HTTP POST request: {{{http://localhost:2480/document/demo}}}
+{{{
+content: 
+{
+  "_class": "Profile", 
+  "nick": "GGaribaldi", 
+  "followings": [], 
+  "followers": [], 
+  "name": "Giuseppe", 
+  "surname": "Garibaldi", 
+  "location": "11:0", 
+  "invitedBy": null, 
+  "sex": "male", 
+  "online": true
+}
+}}}
+HTTP response: {{{9:11}}}
+=== PUT - Document ===
+Update a document.
+
+Syntax: {{{http://<server>:[<port>]/document/<database>/<record-id>}}}
+==== Example ====
+HTTP PUT request: {{{http://localhost:2480/document/demo/9:0}}}
+{{{
+content: 
+{
+  "_class": "Profile", 
+  "nick": "GGaribaldi", 
+  "followings": [], 
+  "followers": [], 
+  "name": "Giuseppe", 
+  "surname": "Garibaldi", 
+  "location": "11:0", 
+  "invitedBy": null, 
+  "sex": "male", 
+  "online": true
+}
+}}}
+HTTP response: empty
+=== DELETE - Document ===
+Delete a document.
+
+Syntax: {{{http://<server>:[<port>]/document/<database>/<record-id>}}}
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/document/demo/9:0}}}
+HTTP response: empty
+
+== Document By Class ==
+=== GET Document by Class ===
+Retrieve a document by cluster name and record position.
+
+Syntax: {{{http://<server>:[<port>]/documentbyclass/<database>/<class-name>/<record-position>[/fetchPlan]}}}<br/>
+See [http://code.google.com/p/orient/wiki/FetchingStrategies Fetching Strategies]
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/document/demo/Profile/0}}}
+HTTP response:
+{{{
+{
+  "_id": "9:0", 
+  "_ver": 2, 
+  "_class": "Profile", 
+  "nick": "GGaribaldi", 
+  "followings": [], 
+  "followers": [], 
+  "name": "Giuseppe", 
+  "surname": "Garibaldi", 
+  "location": "11:0", 
+  "invitedBy": null, 
+  "sex": "male", 
+  "online": true
+}
+}}}
+
+== Storage==
+=== GET - Storage ===
+Retrieve information about storage space.
+
+Syntax: {{{http://<server>:[<port>]/allocation}}}
+
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/allocation}}}
+HTTP response:
+{{{
+{
+  "size": 61910, 
+  "segments": [
+    {"type": "d", "offset": 0, "size": 33154}, 
+    {"type": "h", "offset": 33154, "size": 4859}, 
+    {"type": "h", "offset": 3420, "size": 9392}, 
+    {"type": "d", "offset": 12812, "size": 49098}
+  ], 
+  "dataSize": 47659, 
+  "dataSizePercent": 76, 
+  "holesSize": 14251, 
+  "holesSizePercent": 24
+}
+}}}
+== Index ==
+_NOTE: Every single new database has the default manual index called "dictionary"._
+=== GET - Index ===
+Retrieve a record looking into the index.
+
+Syntax: {{{http://<server>:[<port>]/index/<index-name>/<key>}}}
+
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/dictionary/test}}}
+HTTP response:
+{{{
+{
+  "name" : "Jay",
+  "surname" : "Miner"
+}
+}}}
+
+=== PUT - Index ===
+Create or modify an index entry.
+
+Syntax: {{{http://<server>:[<port>]/index/<index-name>/<key>}}}
+
+==== Example ====
+HTTP PUT request: {{{http://localhost:2480/dictionary/test}}}
+{{{
+content: 
+{
+  "name" : "Jay",
+  "surname" : "Miner"
+}
+}}}
+HTTP response:
+No response.
+
+=== DELETE - Index ===
+Remove an index entry.
+
+Syntax: {{{http://<server>:[<port>]/index/<index-name>/<key>}}}
+
+==== Example ====
+HTTP DELETE request: {{{http://localhost:2480/dictionary/test}}}
+HTTP response:
+No response.
+
+== Query ==
+=== GET - Query ===
+Execute a query against the database. Query means only SQL SELECT command. It's idempotent and can't change the database. Remember that in IE6 the URL can be maximum of 2,083 characters. Other browsers supports major length, but if you want to stay compatible with all limit to 2,083 characters.
+
+Syntax: {{{http://<server>:[<port>]/query/<database>/sql/<query-text>[/<limit>][/<fetchPlan>]}}}<br/>
+See [http://code.google.com/p/orient/wiki/FetchingStrategies Fetching Strategies]
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/query/demo/sql/select from Profile}}}
+
+HTTP response:
+{{{
+{ "result": [
+{
+  "_id": "-3:1", 
+  "_ver": 0, 
+  "_class": "Address", 
+  "type": "Residence", 
+  "street": "Piazza di Spagna", 
+  "city": "-4:0"
+},
+{
+  "_id": "-3:2", 
+  "_ver": 0, 
+  "_class": "Address", 
+  "type": "Residence", 
+  "street": "test", 
+  "city": "-4:1"
+}] }
+}}}
+
+The same query with the limit to maximum 20 results using the fetch plan *:-1 that means load all recursively:
+
+HTTP GET request: {{{http://localhost:2480/query/demo/sql/select from Profile/20/*:-1}}}
+
+== Server ==
+=== GET - Server ===
+Retrieve information about the connected OrientDB Server. Requires additional authentication to the server.
+
+Syntax: {{{http://<server>:[<port>]/server}}}
+
+==== Example ====
+HTTP GET request: {{{http://localhost:2480/server}}}
+HTTP response:
+{{{
+{
+  "connections": [{
+    "id": "4", 
+    "id": "4", 
+    "remoteAddress": "0:0:0:0:0:0:0:1:52504", 
+    "db": "-", 
+    "user": "-", 
+    "protocol": "HTTP-DB", 
+    "totalRequests": "1", 
+    "commandInfo": "Server status", 
+    "commandDetail": "-", 
+    "lastCommandOn": "2010-05-26 05:08:58", 
+    "lastCommandInfo": "-", 
+    "lastCommandDetail": "-", 
+    "lastExecutionTime": "0", 
+    "totalWorkingTime": "0", 
+...
+}}}

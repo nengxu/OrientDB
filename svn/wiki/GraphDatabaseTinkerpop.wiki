@@ -1,0 +1,195 @@
+#summary Graph Database and Tinkerpop
+#labels Java,GraphDB,api
+
+http://www.orientechnologies.com/images/tinkerpop-logo-title.png
+
+<wiki:toc max_depth="4" />
+
+= Introduction =
+
+Even if OrientDB already provides [GraphDatabaseRaw own APIs] to handle graphs in easy way, starting from release 0.9.22 OrientDB provides an implementation of the [http://wiki.github.com/tinkerpop/blueprints Tinkerpop Blueprints] APIs. [http://www.tinkerpop.com Tinkerpop] is a complete stack of projects to handle Graphs:
+ * [http://wiki.github.com/tinkerpop/blueprints Blueprints] provides a collection of interfaces and implementations to common, complex data structures. In short, Blueprints provides a one stop shop for implemented interfaces to help developers create software without being tied to particular underlying data management systems.
+ * [http://wiki.github.com/tinkerpop/gremlin Gremlin] is a Turing-complete, graph-based programming language designed for key/value-pair multi-relational graphs. Gremlin makes use of an XPath-like syntax to support complex graph traversals. This language has application in the areas of graph query, analysis, and manipulation.
+ * [http://rexster.tinkerpop.com Rexster] is a RESTful graph shell that exposes any Blueprints graph as a standalone server. Extensions support standard traversal goals such as search, score, rank, and, in concert, recommendation. Rexster makes extensive use of Blueprints, Pipes, and Gremlin. In this way its possible to run Rexster over various graph systems. To configure Rexster to work with OrientDB follow this guide: [Rexster configuration].
+ * [http://pipes.tinkerpop.com Pipes] is a graph-based data flow framework for Java 1.6+. A process graph is composed of a set of process vertices connected to one another by a set of communication edges. Pipes supports the splitting, merging, and transformation of data from input to output.
+
+= Get started =
+Download the [GraphEdTutorial Graph(Ed) and follow this tutorial].
+
+= Database types =
+The root class to handle graphs is [http://github.com/tinkerpop/blueprints/blob/master/blueprints-orient-graph/src/main/java/com/tinkerpop/blueprints/pgm/impls/orientdb/OrientGraph.java OrientGraph].
+
+The kind of database used depends by the [Concepts#Database_URL Database URL] used.
+ * *Persistent embedded* GraphDB. OrientDB is linked to the application as JAR (No network transfer). Use *local* as prefix. Example "local:/tmp/graph/db"
+ * *Persistent remote* GraphDB. Uses a binary protocol to send and receive data from a remote OrientDB server. Use *remote* as prefix. Example "remote:localhost/db". It requires a OrientDB Server instance is up and running at the specified address (localhost in this case). Remote database can be persistent or in-memory as well.
+ * *In-Memory embedded* GraphDB. Keeps all the data only in memory. Use *memory* as prefix. Example "memory:test"
+
+Persistent GraphDB can be:
+ * *Non-transactional* GraphDB (default). This means that each operation is _atomic_ and data is updated to the disk at each operation. When the method returns the disk is updated.
+ * *Transactional* GraphDB. It means that the operations executed inside a transaction marked between a {{{startTransaction()}}} and a {{{stopTransaction()}}}, will be kept in memory until the transaction ends (see below for the usage). When the method {{{ stopTransaction(Conclusion.SUCCESS)}}} returns, all the transaction changes are stored to the disk.
+
+= Work with GraphDB =
+Before to work with a graph you need an instance of OrientGraph class. The constructor gets a [Concepts#Database_URL URL] that is the location of database. If the database already exists, it will be opened, otherwise will be created.
+
+Remember always to close the graph once done using the {{{.shutdown()}}} method.
+
+Example:
+{{{
+OrientGraph graph = null;
+try {
+  graph = new OrientGraph("local:C:/temp/graph/db");
+  ...
+
+}finally{
+  if( graph != null )
+    graph.shutdown();
+}
+}}}
+== Gremlin usage ==
+If you use GREMLIN language with OrientDB remember to initialize it with:
+{{{
+OGremlinHelper.global().create()
+}}}
+
+== Security ==
+If you want to use the OrientDB security use the constructor that get the [Concepts#Database_URL URL], user and password. To know more about OrientDB security visit [Security].
+
+== Reuse a graph ==
+To reuse an opened graph use the {{{void OrientGraph.clear()}}} method. This method remove all the vertexes, edges, properties and indexes permanently.
+Example:
+{{{
+OrientGraph graph = new OrientGraph("local:C:/temp/graph/db", "admin", "admin");
+graph.clear();
+}}}
+
+= Transactions =
+== Transaction modes ==
+Available transaction modes are:
+ * *MANUAL*, the default, means that the transaction management is in charge to the developer
+ * *AUTOMATIC*, means that every single operation that changes the Graph will be executed automatically inside a transaction
+
+To know the current transaction mode call the {{{Mode getTransactionMode()}}} method. To change it use {{{void setTransactionMode(Mode iMode)}}} where Mode can be MANUAL or AUTOMATIC.
+
+== Use transactions ==
+To group multiple operations inside the same transaction you need to mark the begin of the transaction with the method {{{void startTransaction()}}}. This method can be called only if database is in MANUAL transaction mode (see [#Transaction_Mode Transaction mode]).
+Example:
+{{{
+graph.startTransaction();
+
+try{
+  Vertex luca = graph.addVertex(null);
+  luca.setProperty( "name", "Luca" );
+
+  Vertex marko = graph.addVertex(null);
+  marko.setProperty( "name", "Marko" );
+
+  Edge lucaKnowsMarko = graph.addEdge(null, luca, marko, "knows");
+
+  graph.stopTransaction(Conclusion.SUCCESS);
+} catch( Exception e ) {
+
+  graph.stopTransaction(Conclusion.FAILURE);
+}
+}}}
+
+Surrounding the transaction between a try/catch assure that any errors will rollback the transaction to the previous status for all the involved elements.
+
+= Work with vertexes and edges =
+== Create a vertex ==
+To create a new Vertex in the current Graph call the {{{Vertex OrientGraph.addVertex(Object id)}}} method. Note that the id parameter is ignored since OrientDB implementation assigns a unique-id once the vertex is created. To return it use {{{Vertex.getId()}}}.
+Example:
+{{{
+Vertex v = graph.addVertex(null);
+System.out.println( "Created vertex: " + v.getId() );
+}}}
+
+== Create an edge ==
+An edge links two vertexes previously created. To create a new Edge in the current Graph call the {{{Edge OrientGraph.addEdge(Object id, Vertex outVertex, Vertex inVertex, String label )}}} method. Note that the id parameter is ignored since OrientDB implementation assigns a unique-id once the vertex is created. To return it use {{{Edge.getId()}}}. {{{outVertex}}} is the vertex instance where the edge starts and {{{inVertex}}} is the vertex instance where the edge ends. {{{label}}} is the edge's label. Null to not assign it.
+Example:
+{{{
+Vertex luca = graph.addVertex(null);
+luca.setProperty( "name", "Luca" );
+
+Vertex marko = graph.addVertex(null);
+marko.setProperty( "name", "Marko" );
+
+Edge lucaKnowsMarko = graph.addEdge(null, luca, marko, "knows");
+System.out.println( "Created edge: " + e.getId() );
+}}}
+
+== Remove a vertex ==
+To remove a vertex from the current Graph call the {{{void OrientGraph.removeVertex(Vertex vertex)}}} method. The vertex will be disconnected from the graph and then removed. Disconnection means that all the vertex's edges will be deleted as well.
+Example:
+{{{
+graph.removeVertex(luca);
+}}}
+
+== Remove an edge ==
+To remove an edge from the current Graph call the {{{void OrientGraph.removeEdge(Edge edge)}}} method. The edge will be removed and the two vertexes will result not connected anymore.
+Example:
+{{{
+graph.removeEdge(lucaKnowsMarko);
+}}}
+
+== Set and get properties ==
+Vertexes and Edges can have multiple properties where the key is a String and the value can be any [Types supported OrientDB types].
+
+ * To set a property use the method {{{void setProperty(String key, Object value)}}}.
+ * To get a property use the method {{{Object getProperty(String key)}}}.
+ * To get all the properties use the method {{{Set<String> getPropertyKeys()}}}.
+ * To remove a property use the method {{{void removeProperty(String key)}}}.
+
+Example:
+{{{
+vertex2.setProperty( "x", 30.0f );
+vertex2.setProperty( "y", ((float) vertex1.getProperty( "y" )) / 2 );
+
+for( String property : vertex2.getPropertyKeys() ){
+  System.out.println("Property: " + property + "=" + vertex2.getProperty( property ) );
+}
+
+vertex1.removeProperty( "y" );
+}}}
+
+= Access to the underlying Graph =
+Since TinkerPop Blueprints API is quite raw and doesn't provide ad-hoc methods for very common use cases you could need to access to the underlying ODatabaseGraphTx object to better use the graph-engine under the hood. Commons operations are:
+ * Count incoming and outgoing edges without browsing them all
+ * Get incoming and outgoing vertexes without browsing the edges
+ * Execute a query using SQL-like language integrated in the engine
+
+The [http://github.com/tinkerpop/blueprints/blob/master/blueprints-orient-graph/src/main/java/com/tinkerpop/blueprints/pgm/impls/orientdb/OrientGraph.java OrientGraph] class provides the method {{{.getRawGraph()}}} to return the underlying native root Graph class: [http://code.google.com/p/orient/source/browse/trunk/core/src/main/java/com/orientechnologies/orient/core/db/graph/ODatabaseGraphTx.java ODatabaseGraphTx]. Follow the [GraphDatabaseNative Graph Database Native APIs] to know its usage.
+
+Example:
+{{{
+  final OrientGraph graph = new OrientGraph("local:C:/temp/graph/db");
+  try{
+    List<OGraphVertex> result = graph.getRawGraph().query( new OSQLSynchQuery("select from ographvertex where outEdges contains ( in.label = 'knows' )"));
+  } finally {
+    graph.shutdown();
+  }
+}}}
+
+= Use the Gremlin language =
+ * [Gremlin How to use the Gremlin language with OrientDB]
+ * [http://github.com/tinkerpop/gremlin/wiki/Getting-Started Getting started with Gremlin]
+ * [https://github.com/tinkerpop/rexster/wiki/Using-Gremlin Usage of Gremlin through HTTP/RESTful API using the Rexter project].
+
+= Tuning =
+As reported in [#Access_to_the_underlying_Graph Access to the underlying Graph] you could use the native API to speed up some operations.
+
+Furthermore since TinkerPop Blueprints API doesn't provide a connection pool mechanism you can avoid to close and reopen the underlying database by setting this property.
+
+{{{
+OGlobalConfiguration.STORAGE_KEEP_OPEN.setValue(Boolean.TRUE);
+}}}
+or by launching your application with this parameter:
+{{{
+java -Dorientdb.storage.keepOpen=true ...
+}}}
+
+This avoids to close and reopen the storage every time. It will be closed automatically when the JVM exits.
+= Benchmarks =
+ * [http://zion-city.blogspot.com/2010/09/erlang-interface-for-orientdb-and-micro.html Micro-benchmark on sorting using Erlang]
+ * [http://zion-city.blogspot.com/2010/09/orientdb-fastest-graphdb-available.html Micro benchmark in comparison with Neo4J]
+
+If you've more information about new benchmarks or you've done your own please share it on the [http://groups.google.com/group/orient-database OrientDB Group]

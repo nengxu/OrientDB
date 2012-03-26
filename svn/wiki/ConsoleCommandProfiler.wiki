@@ -1,0 +1,28 @@
+#summary Console command: profiler
+#labels console
+
+= Profile control =
+
+Control the profiler.
+
+== Syntax ==
+
+{{{
+profiler on|off|dump|reset
+}}}
+
+Where:
+
+ * on      Turn on the profiler and start recording
+ * off     Turn off the profiler and stop recording
+ * dump    Dump profiler's data
+ * reset   Reset profiler's data
+
+== Example ==
+
+{{{
+> profiler on
+> profiler dump
+}}}
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

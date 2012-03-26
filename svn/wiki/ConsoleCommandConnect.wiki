@@ -1,0 +1,38 @@
+#summary Console command: connect
+#labels console
+
+= Connect =
+
+Open a database using a URL.
+
+== Syntax ==
+
+{{{connect <database-url> <user-name> <user-password>}}}
+
+Where:
+
+ * *database-url*   The url of the database to connect in the format {{{<mode>:<path>}}}
+ * *user*           The user name
+ * *user-password*  The user password
+
+== Example: connect to a local database ==
+
+To connect to a local database loading it directly into the console.
+
+Example:
+{{{> connect local:../databases/demo/demo admin admin}}}
+
+== Example: Connect to a remote database ==
+
+To connect to a local or remote database by using a Orient Server.
+
+Example:
+{{{> connect remote:127.0.0.1/demo admin admin}}}
+
+{{{
+> connect local:../databases/demo/demo admin admin
+
+Connecting to database [local:../databases/demo/demo]...OK
+}}}
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

@@ -1,0 +1,293 @@
+#summary Document Database usage through Java APIs
+#labels Java,API
+
+http://www.orientechnologies.com/images/orient_db_small.png
+
+<wiki:toc max_depth="4" />
+
+= Introduction =
+The Orient Document DB is the base of higher-level implementation like [ObjectDatabase ObjectDatabase] and [GraphDatabase GraphDatabase]. The Document Database API has the following features:
+ * supports [#Multi-threading Multi threads] access
+ * supports [#Transactions transactions]
+ * supports [#Query queries]
+ * very flexible: can be used in schema-full, schema-less or schema-hybrid mode.
+ 
+This is an example to store 2 linked documents in the database:
+{{{
+// OPEN THE DATABASE
+ODatabaseDocumentTx db = new ODatabaseDocumentTx("remote:localhost/petshop").open("admin", "admin");
+
+// CREATE A NEW DOCUMENT AND FILL IT
+ODocument doc = new ODocument(db, "Person");
+doc.field( "name", "Luke" );
+doc.field( "surname", "Skywalker" );
+doc.field( "city", new ODocument(db, "City").field("name","Rome").field("country", "Italy") );
+              
+// SAVE THE DOCUMENT
+doc.save();
+
+db.close();
+}}}
+
+This is the very first example. While the code is pretty clear and easy to understand please note that we haven't declared the type "Person" before now. When an ODocument instance is saved, the declared type "Person" will be created without constraints. To declare persistent classes look at the [Schema Schema management].
+
+= Use the database =
+Before to execute any operation you need an opened database instance. You can [#Open_a_database open an existent database] or [#Create_a_new_database create a new one]. Databases instances aren't thread safe, so use one database per thread.
+
+Before to open or create a database instance you need a valid URL. URL is where the database is available. URL says what kind of [Concepts#Storage] will be used. for example *memory:* means in-memory only database, *local:* is for embedded ones and *remote:* to use a remote database hosted on a up & running [DBServer OrientDB Server] instance. For more information look at [Concepts#Database_URL Database URL].
+
+Database instances must be closed once finished to release precious resources. To assure it the most common usage is to enclose all the database operations inside a try/finally block:
+{{{
+ODatabaseDocumentTx db = new ODatabaseDocumentTx("local:/temp/test");
+db.open("admin", "admin");
+
+try {
+  // YOUR CODE
+} finally {
+  db.close();
+}
+}}}
+
+If you are using a remote storage (url starts with *"remote:"*) assure the server is up & running and include the *orientdb-client.jar* file in your classpath.
+
+== Multi-threading ==
+The ODatabaseDocumentTx class is non thread-safe. For this reason use different ODatabaseDocumentTx instances by multiple threads. They will share the same Storage instance (with the same URL) and the same level-2 cache. For more information look at [JavaMultiThreading Multi-Threading with Java].
+
+== Create a new database ==
+=== In local filesystem ===
+{{{
+ODatabaseDocumentTx db = new ODatabaseDocumentTx ("local:/tmp/databases/petshop").create();
+}}}
+
+=== On a remote server ===
+To create a database in a remote server you need the user/password of the remote OrientDB Server instance. By default the "root" user is created. Check this in the file config/orientdb-server-config.xml, where you will also find the password.
+
+{{{
+new OServerAdmin("remote:petshop").connect("root", "kjhsdjfsdh128438ejhj").createDatabase("local").close();
+}}}
+
+== Open a database ==
+{{{
+ODatabaseDocumentTx db = new ODatabaseDocumentTx ("remote:localhost/petshop").open("admin", "admin");
+}}}
+
+The database instance will share the connection versus the storage. if it's a "local" storage, then all the database instances will be synchronized on it. If it's a "remote" storage then the network connection will be shared among all the database instances.
+
+=== Use the connection Pool ===
+One of most common use cases is to reuse the database, avoiding to create it every time. It's also the typical scenario of the Web applications. Instead of creating a new ODatabaseDocumentTx instance all the times, get an available instance from the pool:
+{{{
+// OPEN THE DATABASE
+ODatabaseDocumentTx db = ODatabaseDocumentPool.global().acquire("remote:localhost/petshop", "admin", "admin");
+try {
+  // YOUR CODE
+  ...
+} finally {
+  db.close();
+}
+}}}
+
+Remember to always close the database instance using the {{{close()}}} database method like a classic non-pooled database. In this case the database will be not closed for real, but the instance will be released to the pool, ready to be reused by future requests. The best is to use a try/finally block to avoid cases where the database instance remains open, just like the example above.
+===Global pool===
+By default OrientDB provide a global pool declared with maximum 20 instances. Use it with: {{{ODatabaseDocumentPool.global()}}}.
+===Use your pool===
+To create your own pool build it and call the {{{setup(min, max)}}} method to define minimum and maximum managed instances. Remember to close it when the pool is not more used. Example:
+{{{
+// CREATE A NEW POOL WITH 1-10 INSTANCES
+ODatabaseDocumentPool pool = new ODatabaseDocumentPool();
+pool.setup(1,10);
+...
+pool.close();
+}}}
+
+= Schema =
+OrientDB can work in schema-full (like RDBMS), schema-less (like many NoSQL Document databases) and in schema-hybrid mode. For more information about the Schema look at the [Schema] page.
+
+To use the schema with documents create the ODocument instance using the {{{ODocument(String className)}}} constructor passing the class name. If the class hasn't been declared, it's created automatically with no fields. This can't work during transaction because schema changes can't be applied in transactional context.
+
+= Security =
+OrientDB supports [Security] by the definition of users and roles. By default new databases have the users admin, reader and writer bound to the respectives roles. Once created a database use *admin* as user and password to access it. Admin user is God and has no limitation.
+
+For more information about the Security look at the [Security] page.
+
+== Current user ==
+To get the reference to the current user use:
+{{{
+OUser user = db.getUser();
+}}}
+
+
+== Close the database ==
+Once finished remember to close the database to free precious resources.
+{{{
+db.close();
+}}}
+
+= Create a new document =
+ODocument instances can be saved by calling the save() method against the object itself. Note that the behaviour depends on the running transaction, if any. See [Transactions].
+
+{{{
+ODocument animal = new ODocument(db, "Animal");
+animal.field( "name", "Gaudi" );
+animal.field( "location", "Madrid" );
+animal.save();
+}}}
+
+
+= Browse all the documents in a cluster =
+
+{{{
+for (ODocument doc : database.browseCluster("CityCars")) {
+  System.out.println( doc.field("model") );
+}}}
+
+= Browse all the records of a class =
+{{{
+for (ODocument animal : database.browseClass("Animal")) {
+  System.out.println( animal.field( "name" ) );
+}}}
+
+= Count records of a class =
+{{{
+long cars = database.countClass("Car");
+}}}
+
+= Count records of a cluster =
+{{{
+long cityCars = database.countCluster("CityCar");
+}}}
+
+= Execute a query =
+Orient supports two kinds of queries:
+ * Native
+ * SQL
+
+== Native query ==
+Native queries are written in Java code. They are pretty fast since the JVM compiles it as for the rest of application. Bear in mind that field names are case-sensitive. For the class names, case sensitivity doesn't hold so you can write them in any case.
+
+Unfortunately at current release Native Queries don't support all the operators of SQL queries and don't use Indexes when present.
+
+Example:
+{{{
+List<ODocument> result = database.query(new ONativeSynchQuery<ODocument, OQueryContextNativeSchema<ODocument>>
+   (database, "Person", new OQueryContextNativeSchema<ODocument>()) {
+			@Override
+			public boolean filter(OQueryContextNativeSchema<ODocument> iRecord) {
+				return iRecord.field("city").field("name").eq("Rome").and().
+                                  field("name").like("G%").go();
+			};
+		});
+}}}
+
+== SQL query ==
+
+Although OrientDB is part of the NoSQL database community, it supports a subset of SQL that allows it to process links to documents and graphs.
+
+To know more about the SQL syntax supported go to: [SQLQuery SQL Query].
+
+Example of a SQL query:
+
+{{{
+List<ODocument> result = db.query(
+  new OSQLSynchQuery<ODocument>("select * from Animal where ID = 10 and name like 'G%'"));
+}}}
+
+=== Prepared query ===
+Prepared query are quite similar to the Prepared Statement of JDBC. Prepared queries are pre-parsed so on multiple execution of the same query are faster than classic SQL queries. Furthermore the pre-parsing doesn't allow SQL Injection.
+
+Prepared query uses two kinds of markers to substitute parameters on execution:
+{{{
+? is positional parameter
+:<par> is named parameter
+}}}
+
+Example of positional parameters:
+{{{
+OSQLSynchQuery<ODocument> query = new OSQLSynchQuery<ODocument>("select from Profile where name = ? and surname = ?");
+List<ODocument> result = database.command(query).execute("Barack", "Obama");
+}}}
+
+Example of named parameters:
+{{{
+OSQLSynchQuery<ODocument> query = new OSQLSynchQuery<ODocument>("select from Profile where name = :name and 
+  surname = :surname");
+Map<String,Object> params = new HashMap<String,Object>();
+params.put("name", "Barack");
+params.put("surname", "Obama");
+
+List<ODocument> result = database.command(query).execute(params);
+}}}
+
+
+=== SQL Commands ===
+To execute SQL commands use the {{{command()}}} method passing a OCommandSQL object:
+
+{{{
+int recordsUpdated = db.command(
+  new OCommandSQL("update Animal set sold = false")).execute();
+}}}
+
+See all the [SQL SQL Commands].
+
+= Update a document =
+
+Any persistent document can be updated using the Java API then calling the db.save() method, or by calling save() method against the document to synchronize the changes to the repository. Behaviour depends on the transaction begun if any. See [Transactions].
+
+{{{
+animal.field( "location", "Nairobi" );
+animal.save();
+}}}
+
+OrientDB will update only the fields really changed.
+
+Example of how to increase the price of all the animals by 5%:
+{{{
+for (ODocument animal : database.browseClass("Animal")) {
+  animal.field( "price", animal.field( "price" ) * 105 / 100 );
+  animal.save();
+}
+}}}
+
+= Delete a document =
+
+To delete a document call the delete() method against the document instance loaded. Behaviour depends by the transaction begun if any. See [Transactions].
+{{{
+animal.delete();
+}}}
+
+Example of deletion of all the documents of class "Animal".
+{{{
+for (ODocument animal : database.browseClass("Animal"))
+  animal.delete();
+}}}
+
+= Transactions =
+Transactions are a practical way to group a set of operations all together. OrientDB supports [http://en.wikipedia.org/wiki/ACID ACID] transactions so or all the operations succeed or no one. The database remains always consistent. For more information look at [Transactions].
+
+Transactions are managed at database level. No nested transactions are supported. A database instance can have only one transaction running. The database's methods to handle transactions are:
+ * *{{{begin()}}}* to start a new transaction. If a transaction was already running, it's rollbacked and a new one is begun
+ * *{{{commit()}}}* makes changes persistent. If an error occurs during commit the transaction is rollbacked and a OTransactionException exception is raised
+ * *{{{rollback()}}}* abort a transaction. All the changes will be lost
+
+== Optimistic approach ==
+Current release only supports the [Transactions#Optimistic_Transaction OPTIMISTIC transaction] where no lock is kept and all is checked at commit time. This improves concurrency but could throw a {{{OConcurrentModificationException}}} exception in case involved records were modified by concurrent clients/threads. In this case the client code can reload updated records and repeat the transaction.
+
+Optimistic transaction keeps all the changes in memory at client-side level, so if you're a remote storage no messages are sent to the server until commit where all the changes will be transferred in block. This reduce network latency, speed-up the execution and increase the concurrency level. This is a big difference with the Relational DBMS where, during a transaction, changes are early sent to the server.
+
+== Usage ==
+Transactions are committed only when the {{{commit()}}} method is called and no errors occur at commit time. The most common usage of transactions is to enclose all the database operations inside a try/finally block. On database closing ("finally" block) if a pending transaction is running it will be rollbacked qutomatically. Look at this example:
+{{{
+ODatabaseDocumentTx db = new ODatabaseDocumentTx(url);
+db.open("admin", "admin");
+
+try {
+  db.begin();
+  // YOUR CODE
+  db.commit();
+} finally {
+  db.close();
+}
+}}}
+
+= Resources =
+ * Javadoc: [http://www.orientechnologies.com/releases/latest/javadoc/index.html JavaDoc]
+ * [OrientDB_Studio OrientDB Studio Web tool].

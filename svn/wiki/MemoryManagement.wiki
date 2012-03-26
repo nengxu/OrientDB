@@ -1,0 +1,12 @@
+#summary Memory Management
+
+= Introduction =
+
+OrientDB has a complex management of memory to achieve best performance with the lowest resources.
+
+
+= Cache =
+== Level 1 cache ==
+== Level 2 cache ==
+
+= Index =

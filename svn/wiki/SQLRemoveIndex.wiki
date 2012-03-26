@@ -1,0 +1,21 @@
+#summary SQL Drop Index
+#labels sql
+
+The *SQL Drop Index* command removes an index on a property defined in the schema.
+
+== Syntax ==
+
+{{{DROP INDEX <index-name>|<class>.<property>}}}
+
+Where:
+ * *class* is the class of the schema
+ * *property*, is the property created into the *class*
+
+== Examples ==
+{{{
+DROP INDEX users.Id
+}}}
+
+For complete index guide look at [Indexes Index guide].
+
+To know more about other SQL commands look at [SQL SQL commands].

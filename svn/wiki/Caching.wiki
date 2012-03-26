@@ -1,0 +1,104 @@
+#summary Caching management
+<wiki:toc max_depth="2" />
+
+= Introduction =
+OrientDB has several caching mechanisms that act at different levels. Look at this picture:
+
+http://www.orientechnologies.com/images/caching.png
+
+ * *Level-1 cache* is one per database instance (and per thread in multi-thread environment)
+ * *Level-2 cache* is one per storage. This means that is shared by all database instances
+ * *[Concepts#Storage Storage]*, depending by the implementation could cache. This is the case for the _Local Storage_ (disk based) that caches file reads to reduce I/O requests
+ * *OS File* Operative System caches I/O when using Memory Mapping techniques
+
+=How cache works?=
+http://www.orientechnologies.com/images/cache-flow.png
+
+When the client application asks for a record OrientDB checks:
+ * if a *transaction* is begun searches it inside the transaction changed records and returns it if found
+ * if the *Level-1* cache is enabled and contains the requested record then return it
+ * if the *Level-2* cache is enabled and contains the requested record then move the record inside the Level-1 cache (if enabled) and return it. In this case the record will be inside Level-1 cache until the database is closed when all the not dirty records will be re-moved to the Level-2 cache to be used by other database instances
+ * at this point the record is not in cache, then ask it to the *Storage* (disk, memory or remote)
+
+=Concurrency=
+In concurrent environment caching could throw problems when you need the freshest version of a record:
+ * if you have only one JVM and one thread Caches can't be unaligned so always leave them on to improve performance
+ * if you have only one JVM but multiple threads each thread owns a database instance with its Level-1 cache. Different Level-1 caches could contain different version of the same record. For this reason if you always need the last version of a record you can:
+  * completely [#Disable_Level-1_cache Disable Level-1 cache]
+  * or unpin the record you don't want reside in cache using the [#Manual_control Manual control]
+  * or, in Java, reload the record by using the API {{{record.reload()}}}
+ * if you have multiple JVMs also Level-2 cache could be unaligned. For this reason if you always need the last version of a record you can:
+  * completely [#Disable_Level-1_cache Disable Level-1 cache] and [#Disable_Level-2_cache Disable Level-2 cache]
+  * or unpin the record you don't want reside in cache using the [#Manual_control Manual control]
+  * or, in Java, reload the record by using the API {{{record.reload()}}}
+
+=Manual control=
+You can manually control which records are cached. By default all records are cachable but by calling the {{{ORecord.unpin()}}} method you avoid the record to be parked in any cache.
+
+= Record cache =
+== Level 1==
+Level-1 cache acts at database level. Each database instance has a Level-1 cache enabled by default. This cache keeps the used records.
+
+== Empty Level-1 cache ==
+To remove all the records in Level-1 cache you can invoke the {{{invalidate()}}} method:
+{{{
+db.getLevel1Cache().invalidate();
+}}}
+
+===Disable Level-1 cache===
+To disable it use the system property {{{cache.level1.enabled}}} by setting it at startup:
+{{{
+java ... -Dcache.level1.enabled=false ...
+}}}
+or via code before to open the database:
+{{{
+OGlobalConfiguration.CACHE_LEVEL1_ENABLED.setValue(false);
+}}}
+===Change size===
+Level-1 cache size is in terms of record entries. Default size is set to -1 that means no limit, but when the free Memory Heap is low then cache entries are freed automatically.
+
+To change the default size use the system property {{{cache.level1.size}}} by setting it at startup:
+{{{
+java ... -Dcache.level1.size=100 ...
+}}}
+or via code before to open the database:
+{{{
+OGlobalConfiguration.CACHE_LEVEL1_SIZE.setValue(100);
+}}}
+
+== Level 2==
+Level-2 cache acts at storage level and it's shared by all the database instances. Level-2 cache is enabled by default. This cache keeps the used records of all the database instances.
+=== Strategy ===
+The Level2 cache strategy means what it does when a record is retrieved. It can be:
+- 0 = *pop* the record, the default
+- 1 = *copy* the record
+
+So by default the record is moved (pop) from Level2 cache to Level1 cache till the database close. In the case of "copy" (value=1) the record remains in Level2 cache for further concurrent threads. On high concurrency environment the "copy" strategy could improve performance at the cost of copy in terms of CPU + RAM.
+
+To change default strategy act globally changing the global parameter. Look at [PerformanceTuning#Parameters all the parameters] for more information.
+
+You can also set it per database cache via Java API calling:
+{{{
+database.getLevel2Cache().setStrategy(STRATEGY.COPY_RECORD);
+}}}
+
+===Disable Level-2 cache===
+To disable it use the system property {{{cache.level2.enabled}}} by setting it at startup:
+{{{
+java ... -Dcache.level2.enabled=false ...
+}}}
+or via code before to open the database:
+{{{
+OGlobalConfiguration.CACHE_LEVEL2_ENABLED.setValue(false);
+}}}
+===Change size===
+Level-2 cache size is in terms of record entries. Default size is set to -1 that means no limit, but when the free Memory Heap is low then cache entries are freed automatically.
+
+To change the default size use the system property {{{cache.level2.size}}} by setting it at startup:
+{{{
+java ... -Dcache.level2.size=100 ...
+}}}
+or via code before to open the database:
+{{{
+OGlobalConfiguration.CACHE_LEVEL2_SIZE.setValue(100);
+}}}

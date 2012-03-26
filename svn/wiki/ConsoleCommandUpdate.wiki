@@ -1,0 +1,52 @@
+#summary Console command: update
+#labels console,sql
+
+Update one or more records in the current database. Remember that Orient can work also in schema-less mode, so you can create any field on the fly.
+
+== Syntax ==
+
+{{{update <class|cluster:<cluster>> set [[,] <field-name> = <field-value>]* [where <conditions>]}}}
+
+For COLLECTIONS:
+
+{{{update <class|cluster:<cluster>> [add|remove] [[,] <field-name> = <field-value>]* [where <conditions>]}}}
+
+For MAPS:
+
+{{{update <class|cluster:<cluster>> [put|remove] [[,] <field-name> = <map-key> [,<map-value>]]* [where <conditions>]}}}
+
+Note that [Concepts#RecordID] must be prefixed with '#'. Example: #12:3.
+
+To learn more about conditions look at [SQLWhere WHERE conditions].
+
+== Examples ==
+=== Example 1: change the value of a field ===
+{{{
+> update Profile set nick = 'Luca' where nick is null
+
+Updated 2 record(s) in 0,008000 sec(s).
+}}}
+=== Example 2: remove a field from all the records ===
+{{{
+> update Profile remove nick
+}}}
+=== Example 3: Add a value into a collection ===
+{{{
+> update Account add addresses = #12:0
+}}}
+=== Example 4: Remove a value from a collection ===
+{{{
+> update Account remove addresses = #12:0
+}}}
+=== Example 5: Put a map entry into a map ===
+{{{
+> update Account put addresses = 'Luca', #12:0
+}}}
+=== Example 6: Remove a value from a map ===
+{{{
+> update Account remove addresses = 'Luca'
+}}}
+
+To learn more about the SQL syntax used by Orient take a look at: [SQLQuery SQL Query].
+
+This is one of the commands of the Orient console. To see all the commands go to [ConsoleCommands Console commands].

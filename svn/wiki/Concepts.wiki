@@ -1,0 +1,200 @@
+#summary Main concepts of Orient DB
+
+<wiki:toc max_depth="4" />
+
+= Storage =
+
+It's the real physical database. It can be:
+ * *local*, where the access is made in the same process
+ * *remote*, by using the network to access to a remote storage
+ * *memory*, all data remain in memory without to use the file system at all
+
+A Storage is composed by multiple [#Cluster Clusters] and [#Data_Segment Data Segments]. You _must_ move real files in your file system only by using the Orient APIs to avoid data corruption.
+
+http://www.orientechnologies.com/images/orientdb-storage.png
+
+= Cluster =
+
+Orient uses *clusters* to store links to the data. A cluster is a very generic way to group records and it is a concept that does not exists in the Relational world. You can use a cluster to group all the record of a certain type, or by a specific value. Example:
+ * Use the cluster "Person" to group all the records of type "Person". This approach is similar to the RDBMS where each table is a cluster.
+ * Use the cluster "Cache" to group all the records most accessed.
+ * Use the cluster "Today" to group all the record created today
+ * Use the cluster "!CityCar" to group all the city cars
+
+These are some examples about the clustering concepts. If you've the background of Relational DBMS world you can start to think to a cluster like a table and use it to group all the records by types.
+
+A cluster can by local or logical.
+
+== Local Physical Cluster ==
+
+It's the best choice if you plan to have a lot of records. The cluster is mapped 1-by-2 to a file in the Operative File System. This boosts  the performance of storing and retrieving records at the cost of more space and to have 2 more files as part of your database. Some OS's are quite restrictive on the number of files a process can keep open.
+
+The local physycal cluster uses two or more files: One or more files with extension "ocl" (Orient Cluster) and one file with extension "och" (Orient Cluster Holes).
+
+If you create the "Person" cluster you'll find in the folder that contains your database the following files:
+ * person.0.ocl
+ * person.och
+
+The first one is the first file (because the '0') that contains real data. You can split a physical cluster into multiple real files. This behavior depends on your configuration. When a cluster file is full, a new file will be used. _NOTE: You can move real files in your file system only by using the Orient APIs_.
+
+The second one is the "Hole" file that stores the holes of erased data inside your cluster.
+
+== Logical Cluster ==
+
+This is the best choice if you plan to have few record in of poor used by your application. In fact Logical Clusters are stored inside a real physical cluster (by default in the cluster called "default"). It's much  slower than the physical cluster, but it saves space and lets the Orient instance use less files. Some OS's are quite restrictive on the number of files a process can keep open.
+
+= Data Segment =
+
+Orient uses *data segments* to store the record content. The Data segment behaves similar to the physical cluster files: uses two or more files: One or multiple files with extension "oda" (Orient DAta) and only one file with extension "odh" (Orient Data Holes).
+
+By default Orient creates the first data segment named "default". In the folder that contains your database you can check the following files:
+ * default.0.oda
+ * default.odh
+
+The first one is the first file (because the '0') that contains real data. You can split a data segment in multiple real files. This behaviour depends by your configuration. When a data segment file is full, a new file will be used.  _NOTE: You can move real files in your file system only by using the Orient APIs_.
+
+Interaction between components: load record use case:
+
+http://www.orientechnologies.com/images/orientdb-loadrecord.png
+
+= Record =
+A record is the smallest unit that can be load and stored into the database.
+
+== Record types ==
+At developer level there are several types of records.
+
+=== Document ===
+It's the most flexible record available in OrientDB. It's softly typed. Types are the schema classes with the defined constraints, but can be used also in schema-less mode. It handles fields in flexible way. A document can be easily imported and exported in JSON format.
+Example of a Document in JSON format:
+{{{
+{
+  "name": "Jay",
+  "surname": "Miner",
+  "job": "Developer",
+  "creations": [
+    { "name": "Amiga 1000",
+      "company": "Commodore Inc."
+    },
+    { "name": "Amiga 500",
+      "company": "Commodore Inc."
+    }
+  ]
+}
+}}}
+OrientDB Documents support complex [#Relationships relationships]. From a programmer perspective can be seen as a sort of persistent Map<String,Object>.
+
+=== Flat ===
+Records are strings. No fields are supported, no indexing, no schema.
+== RecordID ==
+In OrientDB each record has a unique ID. The RecordID is composed in this way:
+{{{#[<cluster>:<position>]}}}
+Where:
+ * cluster, is the cluster id. Positive numbers mean [#Physical_Cluster physical clusters]. Negative numbers mean [#Logical_Cluster logical clusters].
+ * position, is the absolute position of the record inside a cluster.
+
+_NOTE: After the release 1.0rc4 the prefix character # is mandatory to recognize a RecordID._
+
+The record never looses its identity unless is deleted. Once deleted its identity could be recycled and assigned to a new record. See the [#Inverse_relationships Inverse relationships] to know more about this.
+
+You can access directly to a record by knowing its RecordID. For this reason you don't need to create a field as primary key as happens in Relational DBMS.
+== Record version ==
+Each record maintains own version number that is incremented at every update. When a record is created the version is zero. In optimistic transactions the version is checked in order to avoid conflicts at commit time.
+= Class =
+A Class is a concept taken from the [http://en.wikipedia.org/wiki/Object-oriented_programming Object Oriented paradigm]. In OrientDB defines a type of record. It's the closest concept to a Relational DBMS Table. Class can be schema-less, schema-full or mixed.
+
+A class can inherit from another shaping a tree of classes. [http://en.wikipedia.org/wiki/Inheritance_(object-oriented_programming) Inheritance] means that the sub-class extends the parent one inheriting all the attributes as they was own.
+
+Each class has its clusters that can be [#Logical_Cluster logical] (by default) or [#Physical_Cluster physical]. A class must have at least one cluster defined (as its default cluster), but can support multiple ones. In this case By default OrientDB will write new records in the default cluster, but reads will always involve all the defined clusters.
+
+When you create a new class by default a new [#Physical_Cluster physical cluster] is created with the same name of the class in lowercase.
+
+==When to use class or cluster in queries?==
+Look at this example: you create the class "Invoice" and the 2 clusters "invoice2011" and "invoice2012". This allow to query all the invoices by using the class as target in SQL select:
+{{{
+SELECT FROM Invoice
+}}}
+If you want to filter per year 2012 and you've create a "year" field in Invoice class do:
+{{{
+SELECT FROM Invoice where year = 2012
+}}}
+But splitting the Class Invoice in multiple clusters and inserting the invoice in the right cluster, one per year, allows you to reach the same goal using:
+{{{
+SELECT FROM cluster:invoice2012
+}}}
+This is much faster because OrientDB doesn't need to browse all the cluster but only the right one-
+
+The combination Class/Cluster is very powerful and allows to resolve many use cases.
+
+
+= Relationships =
+OrientDB supports two kind of relationships: *referenced* and *embedded*. OrientDB can manage relationships when are defined in the [http://code.google.com/p/orient/wiki/Schema#Define_relationships Schema] or in Schema-less scenario.
+
+== Referenced relationships ==
+Relationships in Orient are managed natively without computing costly JOINs as happens in the Relational DBMSs. In facts Orient stores the direct link(s) to the target objects of relationship. This boost up the load of entire graph of connected objects as happens for Graph and Object DBMSs.
+Example:
+{{{
+                  customer
+  Record A     ------------->    Record B
+CLASS=Invoice                 CLASS=Customer
+  RID=5:23                       RID=10:2
+}}}
+*Record A* will contain the _reference_ to the *Record B* in the property called "customer". Note that both records are reachable by any other records since they have a [#RecordID RecordID].
+=== 1-1 and N-1 referenced relationships ===
+This kind of relationships are expressed using the *LINK* type.
+=== 1-N and N-M referenced relationships ===
+This kind of relationships are expressed using the collection of links such as:
+ * *LINKLIST*, as an ordered list of links
+ * *LINKSET*, as an unordered set of links. It doesn't accepts duplicates
+ * *LINKMAP*, as an ordered map of links with key a *String*. It doesn't accepts duplicated keys
+
+== Embedded relationships ==
+Embedded records, instead, are contained inside the record that embeds them. It's a kind of relationship stronger than the [#Referenced_relationships reference]. The embedded record will not have a own [#RecordID RecordID] since it can't be directly referenced by other records. It's only accessible thriught the container record. If the container record is deleted, then the embedded record will be deleted too. Example:
+{{{
+                  address
+  Record A     <>---------->   Record B
+CLASS=Account               CLASS=Address
+  RID=5:23                     NO RID!
+}}}
+*Record A* will contain the entire *Record B* in the property called "address". *Record B* can be reached only by traversing the container record.
+
+Example:
+{{{
+SELECT FROM account WHERE address.city = 'Rome'
+}}}
+=== 1-1 and N-1 referenced relationships ===
+This kind of relationships are expressed using the *EMBEDDED* type.
+=== 1-N and N-M referenced relationships ===
+This kind of relationships are expressed using the collection of links such as:
+ * *EMBEDDEDLIST*, as an ordered list of records
+ * *EMBEDDEDSET*, as an unordered set of records. It doesn't accepts duplicates
+ * *EMBEDDEDMAP*, as an ordered map of records as value with key a *String*. It doesn't accepts duplicated keys
+
+== Inverse relationships ==
+Until support for Inverse Relationships is implemented natively, the application developer is responsible for maintinaing their integrity. (See issue [http://code.google.com/p/orient/issues/detail?id=7]).
+
+For this reason when a relationship is changed, the developer needs to update the referenced object by hand, removing the back relationship to the original.
+
+= Database =
+
+A database is an interface to access to the real [#Storage Storage]. The database knows all the high-level concepts such as Query, Schema, Metadata, Indexes, etc. Orient provides multiple database types. Take a look to the [JavaAPI#Database_types Database types] to know more about it.
+
+== Database URL ==
+
+Orient has its own [http://en.wikipedia.org/wiki/Uniform_Resource_Locator URL] format:
+
+{{{<engine>:<db-name>}}}
+
+Where:
+ * *db-name* is the database name and depends by the engine used (see below)
+ * *[http://code.google.com/p/orient/wiki/JavaAPI#Engines engine]* can be:
+
+|| *Engine* || *Description* || *Example* ||
+|| remote || The storage will be opened via remote network connection. It requires a Orient Server up and running. In this mode the database it's shared among multiple clients. Syntax: {{{remote:<server>:[<port>]/db-name}}}. The port is optional and if not specified is 2480.|| remote:localhost/petshop ||
+|| local || Direct access via local File System, so the path must be a path on the local file system. In this configuration OrientDB runs as embedded. The database can't be opened by multiple processes (if you want this you have to use "remote" instead). It's the fastest access because avoid any network connection and transfers|| local:C:\temp\databases\petshop\petshop ||
+|| memory || Open a database completely in memory || memory:petshop ||
+
+== Database usage ==
+
+The database must be always closed once you've finished with it.
+
+NOTE: Orient closes automatically all opened storages when the process dies softly (not by force killing). This assure as far as the Operative System allows a graceful shutdown.

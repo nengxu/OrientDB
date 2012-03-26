@@ -1,0 +1,19 @@
+#summary SQL Delete
+#labels sql
+
+The *SQL Delete* command deletes one or more records into the database. The set of records envolved are taken by the [SQLWhere WHERE] clause.
+
+== Syntax ==
+
+{{{DELETE FROM <Class>|cluster:<cluster>|index:<index> [WHERE <condition>*]}}}
+
+The [SQLWhere WHERE] clause is common to the other SQL commands.
+
+== Examples ==
+
+Delete all the records with surname equals to 'unknown' ignoring the case:
+
+{{{delete from Profile where surname.toLowerCase() = 'unknown' }}}
+
+
+To know more about other SQL commands look at [SQL SQL commands].

@@ -1,0 +1,138 @@
+#summary Installation guide
+
+Installation needs you have downloaded OrientDB before. If you haven't an OrientDB distribution goto [Download].
+
+= Installation requirements =
+== Operating System ==
+OrientDB runs on every operating system that has an implementation of Java Virtual Machine (JVM). These include:
+ * All Linux distributions
+ * Mac OS X
+ * Microsoft Windows from 95/NT onward
+ * Sun Solaris
+ * HP-UX
+ * IBM AIX
+== Java Runtime Environment ==
+OrientDB requires Java SE 6 to be installed in order to deploy the Server component. Client applications can be written using Java SE 5.
+
+You can check which version of Java SE you have installed by typing "java -version" in a command shell (or a command prompt for Windows users):
+{{{
+> java -version
+
+java version "1.6.0_20"
+Java(TM) SE Runtime Environment (build 1.6.0_20-b02)
+Java HotSpot(TM) Client VM (build 16.3-b01, mixed mode, sharing)
+}}}
+
+= Installation =
+== Regular distribution ==
+Orient is distributed in a ZIP file. You can download the latest version at the [Download Download Page]. To install, just extract the contents of ZIP archive into a folder on your PC.
+
+=== Contents of the archive ===
+The Orient distribution contains the following folders:
+|| *Folder* || *Description* ||
+|| benchmarks || Set of performance tests ||
+|| bin || Scripts to run Orient server and console ||
+|| config || Configuration files ||
+|| databases || Default place to store databases ||
+|| lib || Compiled Java archives with OrientDB ||
+|| log || Server log files ||
+|| www || A local mirror of a web site used by [KeyValueServer Orient KeyValue Server] ||
+
+=== Starting the server ===
+To start OrientDB server, go to the `bin` folder and run script `server.sh` for Unix-like operating system, or `server.bat` for Windows. You may have to set the execute permission on the script file before running it.
+
+=== Running the console ===
+Once Orient is installed on your system, you can open the console by double-clicking on *console* script or by executing it from a command shell. The output should be like this:
+{{{
+ORIENT database v.0.9.3 www.orientechnologies.com
+Type 'help' to display all the commands supported
+
+>
+}}}
+Type *?* to show all the commands supported by the console. FOr ore information about them, go to [ConsoleCommands]. By typing *?* command, output will be the following:
+{{{
+> ?
+
+AVAILABLE COMMANDS:
+
+* create database     Create a new database
+* create cluster      Create a new cluster inside a database
+* create record       Create a new record
+* load record         Load a record in memory and set it as the current one
+* display record      Display current record's attributes
+* browse class        Browse all the records of a class
+* browse cluster      Browse all the records of a cluster
+* clusters            Display all the configured clusters
+* dictionary keys     Display all the keys in the database dictionary
+* dictionary get      Loookup for a record using the dictionary. If found, set it as the current record
+* dictionary put      Insert or modify an entry in the database dictionary. The entry is comprised by key=String, value=record-id
+* dictionary remove   Remove the association in the dictionary
+* export database     Export a database
+* export record       Export the current record in the requested format
+* get                 Return the value of a property
+* classes             Display all the configured classes
+* set                 Change the value of a property
+* connect             Connect to a database
+* properties          Return all the configured properties
+* info                Display information about current status
+* disconnect          Disconnect from the current database
+* select              Execute a query against the database and display the results
+* help                Print this help
+* exit                Close the console
+}}}
+
+You can now open the demo database shipped with the OrientDB distribution by using the [ConsoleCommandConnect connect] command:
+{{{connect local:../databases/demo/demo admin admin}}}
+This will open the database located "locally" in your file system using the administrator account. For more information about the databases and the proper formats of URLs go [Concepts#Database here]. The output of the previous command should be the following:
+{{{
+> connect local:../databases/demo/demo admin admin
+Connecting to database [local:../databases/demo/demo]...OK
+}}}
+Once connected, you may view the information about the database by typing [ConsoleCommandInfo info] command:
+{{{
+> info
+Current database: ../databases/demo/demo
+CLUSTERS:
+--------------------+------+--------------------+-----------+
+NAME                |  ID  | TYPE               | ELEMENTS  |
+--------------------+------+--------------------+-----------+
+metadata            |     0|Physical            |        11 |
+index               |     1|Physical            |         0 |
+default             |     2|Physical            |       779 |
+csv                 |     3|Physical            |      1000 |
+binary              |     4|Physical            |      1001 |
+person              |     5|Physical            |         7 |
+animal              |     6|Physical            |         5 |
+animalrace          |    -2|Logical             |         0 |
+animaltype          |    -3|Logical             |         1 |
+orderitem           |    -4|Logical             |         0 |
+order               |    -5|Logical             |         0 |
+city                |    -6|Logical             |         3 |
+--------------------+------+--------------------+-----------+
+TOTAL                                                  2807 |
+------------------------------------------------------------+
+
+CLASSES:
+--------------------+------+------------------------------------------+-----------+
+NAME                |  ID  | CLUSTERS                                 | ELEMENTS  |
+--------------------+------+------------------------------------------+-----------+
+Person              |     0| person                                   |         7 |
+Animal              |     1| animal                                   |         5 |
+AnimalRace          |     2| AnimalRace                               |         0 |
+AnimalType          |     3| AnimalType                               |         1 |
+OrderItem           |     4| OrderItem                                |         0 |
+Order               |     5| Order                                    |         0 |
+City                |     6| City                                     |         3 |
+--------------------+------+------------------------------------------+-----------+
+TOTAL                                                                          16 |
+----------------------------------------------------------------------------------+
+
+>
+}}}
+
+
+Now you have OrientDB installed at your machine and we suggest you to study the following pages of the manual to start integrating it with your applications:
+
+ * [JavaAPI Learn how to develop your very first application with OrientDB]
+
+ * [ConsoleCommands Get acquainted with the console]

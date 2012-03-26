@@ -1,0 +1,47 @@
+#summary Pagination of queries
+#labels sql
+
+= Query pagination =
+
+OrientDB supports pagination natively. Pagination doesn't consume server side resources because no cursors are used but only [Concepts#RecordID RecordIDs] as pointers to the physical position in the cluster. The trick is to execute the query multiple times setting the LIMIT as the page size and using the greater than > operator against @rid. The *lower-rid* is the starting point where to start to search, for example #10:300.
+
+Syntax:
+{{{
+SELECT FROM @rid > <lower-rid> ... [LIMIT <max-records>]
+}}}
+
+
+Where:
+ * *lower-rid* is the exclusive lower bound of the range as [Concepts#RecordID RecordID]
+ * *max-records* is the maximum number of records returned by the query
+
+In this way OrientDB will start to scan the cluster from the given position *lower-rid* + 1. After the first call the *lower-rid* will be the rid of the last record returned by the previous call. To scan cluster form beginning use #-1:-1 as *lower-rid* .
+
+== Handle it by hand ==
+
+{{{
+database.open("admin", "admin");
+final OSQLSynchQuery<ODocument> query = new OSQLSynchQuery<ODocument>("select from Customer where @rid > ? LIMIT 20");
+ORID last = new ORecordId();
+
+List<ODocument> resultset = database.query(query, last);
+
+while (!resultset.isEmpty()) {
+    last = resultset.get(resultset.size() - 1).getIdentity();
+    resultset = database.query(query, last);
+}
+database.close();
+}}}
+
+== Automatic management ==
+
+In order to simplify the pagination the OSQLSynchQuery object (usually used in queries) keeps track of the current page and if executed multiple times it advances by page to page automatically without using the ">" operator.
+
+Example:
+
+{{{
+OSQLSynchQuery<ODocument> query = new OSQLSynchQuery<ODocument>("select from Customer LIMIT 20");
+for (List<ODocument> resultset = database.query(query); !resultset.isEmpty(); resultset = database.query(query)) {
+  ...
+}
+}}}

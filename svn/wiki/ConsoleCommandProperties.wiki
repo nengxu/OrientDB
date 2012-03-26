@@ -1,0 +1,29 @@
+#summary Console command: properties
+#labels console
+
+= Properties =
+
+Return all the properties setted.
+
+== Syntax ==
+
+{{{properties}}}
+
+== Example ==
+
+{{{
+> properties
+
+PROPERTIES:
++---------------------+----------------------+
+| NAME                | VALUE                |
++---------------------+----------------------+
+| limit               = 20                   |
++---------------------+----------------------+
+}}}
+
+== See also ==
+
+To change a property value use the [ConsoleCommandSet set].
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

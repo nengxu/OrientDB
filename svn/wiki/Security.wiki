@@ -1,0 +1,103 @@
+#summary Security
+<wiki:toc max_depth="4" />
+= Introduction =
+
+The security model of OrientDB is based on well known concepts built on users and roles. A database has *"users"*. Each [#User User] has one or more *"roles"*. [#Role Role] is compound by the mode of working (more later) and the set of permission rules.
+
+= Database security =
+
+http://www.orientechnologies.com/images/orientdb-dbsecurity.png
+
+== User ==
+A User is an actor of the database. When you open a database you need to specify the user name and password used. Each user has own credentials and permissions.
+
+By convention 3 users are always created by default every time you create a new database. Passwords are the same as the user name. Default users are:
+ * *Admin*, all access to all the functions without limitation
+ * *Reader*, classic read-only user. Can read any records but can't modify or delete them. Can't access to internal information such as user and role themselves.
+ * *Writer*, like the "reader" but can also create, update and delete records.
+
+Users are themselves records stored inside the cluster "OUser". The passwords are stored in hash format using the strong algorithm [http://en.wikipedia.org/wiki/SHA-2 SHA-256].
+
+=== Work with users ===
+
+To browse all the database's users use:
+{{{
+select from ouser
+}}}
+
+To change the user name use:
+{{{
+update ouser set name = 'jay' where name = 'reader'
+}}}
+
+In the same way to change the user password use:
+{{{
+update ouser set password = 'hello' where name = 'reader'
+}}}
+
+The password will be saved in hash format using the algorithm SHA-256. The trigger "OUserTrigger" will encrypt the password transparently before the record is saved.
+
+== Role ==
+A role decides if it's allowed to execute an operation against a resource. Mainly this decision depends by the "working mode" and by the "rules". Rules work differently based on the "working mode".
+
+=== Working modes ===
+
+The supported "working modes" are:
+
+=== Allow all but (the rules) ===
+By default is a super user and exceptions are enlisted in the rules. If no rule is found for the requested resource, then it's allowed to execute the operation. Use this mainly for power users. "Admin" default role uses this mode and has no exception rules.
+
+==== Deny all but (the rules) ====
+By default it can't make nothing but the exceptions enlised in the rules. This should be the default mode for all classic users. "Reader" and "Writer" default roles use this mode.
+
+=== Operations ===
+The supported operations are the classic CRUD operations:
+ * (*C*)reate
+ * (*R*)ead
+ * (*U*)pdate
+ * (*D*)elete
+
+A role can have none or all the permissions above.
+
+=== Resources ===
+Resources are strings bound to OrientDB concepts:
+ * {{{database}}}
+ * {{{database.class}}}
+ * {{{database.class.<class-name>}}}
+ * {{{database.cluster}}}
+ * {{{database.cluster.<cluster-name>}}}
+ * {{{database.query}}}
+ * {{{database.command}}}
+ * {{{database.config}}}
+ * {{{database.hook.record}}}
+ * {{{server.admin}}}
+
+Example:
+
+Enable the access to all the classes but "Car":
+{{{
+database.class.* = ALL -> Access to all the classes with all the CRUD permissions
+database.class.Car = NONE -> No access to the "Car" class
+}}}
+
+== Grant and revoke permissions ==
+
+To grant and revoke permissions use the [SQLGrant] and [SQLRevoke] commands.
+
+= OrientDB Server security =
+
+A single OrientDB server can manage several databases per time, each one with its users. In HTTP protocol is handled by using different realms. This is the reason why OrientDB Server instance has its own users to handle the server instance itself.
+
+When the OrientDB Server starts check if there is configured the "root" user. If not creates it into the config/server-config.xml file with an automatic generated very long password.
+
+Feel free to change the password, but restart the server to get the changes.
+
+== Server's resources ==
+This section contains all the available server's resources. Each user can declare what resources has access. Wildcard {{{*}}} means any resources. *root* server user, by default, has all the privileges, so it can access to all the managed databases.
+
+|| *Resource* || *Description* ||
+||server.info|| Retrieves the server information and statistics||
+||server.listDatabases|| Lists the available databases on the server ||
+||database.create|| Creates a new database in the server||
+||database.drop||Drops a database ||
+||database.passthrough|| Starting from 1.0rc7 the server's user can access to all the managed databases if has the resource *database.passthrough* defined. Example:{{{<user name="replicator" password="repl" resources="database.passthrough" />}}}||

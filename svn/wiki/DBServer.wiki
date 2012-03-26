@@ -1,0 +1,356 @@
+#summary OrientDB Server
+#labels server
+
+<wiki:toc max_depth="4" />
+
+= Introduction =
+
+OrientDB Server (DB-Server from now) is a multi-thread Java application that listen remote commands and execute them against the Orient databases. OrientDB Server supports both binary and HTTP protocols. The first one is used by Orient native client and Orient Console. The second one can be used by any languages since it's based on [OrientDB_REST HTTP RESTful API]. The HTTP protocol is used also by the [OrientDBStudio OrientDB Studio application].
+
+= Start the server =
+To start the server execute the script bin/orient-db.sh (or bin/orient-db.bat in MS Windows systems). By default both interfaces are active: binary and http. If you want to disable one of these change the [#Configuration Server configuration].
+
+When the server starts try to acquire the port 2424 for the binary protocol and 2480 for the HTTP one. If some port is busy the next one will be taken until the port it's free. By default the range for binary protocol is 2424-2430 and 2480-2490 for the http one, but you can always change these settings in [#Configuration Server configuration].
+
+= Stop the server =
+To stop a running server just press CTRL+C in the open window that runs the Server instance or soft kill the process to be sure that the opened databases close softly. Soft kill in MS Windows systems can be done by closing the window. In Unix like systems a kill it's enought (Don't use kill -9 unless you want to force a hard shutdown).
+
+= Connect to the server =
+
+== Console ==
+The OrientDB distribution provides the [ConsoleCommands Orient Console] tool as a console Java application that uses the binary protocol to work with the database.
+
+== OrientDB Studio ==
+Starting from the release 0.9.13 Orient comes with the [OrientDB_Studio OrientDB Studio application], a client-side web app that uses the HTTP protocol to work with the database.
+
+== Write your application ==
+To start writing your first application with Orient you need to consider the language to use. If you plan to use Java you can use the [JavaAPI native APIs]. For all the other languages you can use the [OrientDB_REST HTTP RESTful protocol].
+
+= Cluster =
+To know more about the usage of a configuration of multiple servers in cluster look at [Clustering].
+
+= Configuration =
+
+== Default configuration ==
+This is the content of the default <b>config/orientdb-server.config</b> file contained in the distribution:
+{{{
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<orient-server>
+  <handlers>
+    <handler class="com.orientechnologies.orient.server.handler.distributed.ODistributedServerManager">
+      <parameters>
+        <parameter name="name" value="default" />
+        <parameter name="security.algorithm" value="Blowfish" />
+        <parameter name="network.multicast.address" value="235.1.1.1" />
+        <parameter name="network.multicast.port" value="2424" />
+        <parameter name="network.multicast.heartbeat" value="10" />
+        <parameter name="replication.conflictResolver.strategy" value="com.orientechnologies.orient.server.replication.conflict.ODefaultReplicationConflictResolver" />
+        <parameter name="replication.conflictResolver.ignoreIfSameContent" value="true" />
+        <parameter name="replication.conflictResolver.ignoreIfMergeOk" value="false" />
+        <parameter name="replication.conflictResolver.latestAlwaysWin" value="false" />
+      </parameters>
+    </handler>
+    <!-- AUTOMATIC BACKUP, TO TURN ON SET THE 'ENABLED' PARAMETER TO 'true' -->
+    <handler class="com.orientechnologies.orient.server.handler.OAutomaticBackup">
+      <parameters>
+        <parameter name="enabled" value="false" />
+        <parameter name="delay" value="4h" />
+        <parameter name="target.directory" value="backup" />
+        <parameter name="target.fileName" value="${DBNAME}-${DATE:yyyyMMddHHmmss}.json" /><!-- ${DBNAME} AND ${DATE:} VARIABLES ARE SUPPORTED -->
+        <parameter name="db.include" value="" /><!-- DEFAULT: NO ONE, THAT MEANS ALL DATABASES. USE COMMA TO SEPARATE MULTIPLE DATABASE NAMES -->
+        <parameter name="db.exclude" value="" /><!-- USE COMMA TO SEPARATE MULTIPLE DATABASE NAMES -->
+      </parameters>
+    </handler>
+  </handlers>
+  <network>
+    <protocols>
+      <!-- Default registered protocol. It reads commands using the HTTP protocol and write data locally -->
+      <protocol implementation="com.orientechnologies.orient.server.network.protocol.binary.ONetworkProtocolBinary" name="binary" />
+      <protocol implementation="com.orientechnologies.orient.server.network.protocol.http.ONetworkProtocolHttpDb" name="http" />
+      <protocol implementation="com.orientechnologies.orient.server.network.protocol.distributed.ONetworkProtocolDistributed" name="distributed" />
+    </protocols>
+    <listeners>
+      <listener protocol="distributed" port-range="2424-2430" ip-address="0.0.0.0" />
+      <listener protocol="http" port-range="2480-2490" ip-address="127.0.0.1">
+        <parameters>
+          <!-- Connection's custom parameters. If not specified the global configuration will be taken -->
+          <parameter name="network.http.charset" value="utf-8" />
+        </parameters>
+        <commands>
+          <command
+            pattern="GET|www GET|studio/ GET| GET|*.htm GET|*.html GET|*.xml GET|*.jpeg GET|*.jpg GET|*.png GET|*.gif GET|*.js GET|*.css GET|*.swf GET|*.ico GET|*.txt"
+            implementation="com.orientechnologies.orient.server.network.protocol.http.command.get.OServerCommandGetStaticContent">
+            <parameters>
+              <!-- Don't cache html resources in development mode -->
+              <entry name="http.cache:*.htm *.html" value="Cache-Control: no-cache, no-store, max-age=0, must-revalidate\r\nPragma: no-cache" />
+              <!-- Default caching -->
+              <entry name="http.cache:default" value="Cache-Control: max-age=120" />
+            </parameters>
+          </command>
+        </commands>
+      </listener>
+    </listeners>
+    <cluster>
+    </cluster>
+  </network>
+  <storages>
+    <!-- Default in-memory storage. Data are not saved permanently. -->
+    <storage path="memory:temp" name="temp" userName="admin" userPassword="admin" loaded-at-startup="true" />
+  </storages>
+  <users>
+  </users>
+  <properties>
+    <!-- Caches static contents. If enabled the files will be kept in memory the first time are loaded. Changes to the files will be taken on the next restart -->
+    <entry name="server.cache.file.static" value="false" />
+
+    <!-- Enable/Disable logging. Levels are: finer, fine, finest, info, warning -->
+    <entry name="log.console.level" value="info" />
+    <entry name="log.file.level" value="fine" />
+  </properties>
+</orient-server>
+}}}
+== Disable distributed configuration ==
+If you don't want to run multiple OrientDB server instances in cluster you can disable it by removing the [DistributedServerManager] handler and change the default listen protocol from "distributed" in "binary".
+
+Example of single server configuration:
+{{{
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<orient-server>
+ <handlers>
+  <!-- AUTOMATIC BACKUP, TO TURN ON SET THE 'ENABLED' PARAMETER TO 'true' -->
+  <handler class="com.orientechnologies.orient.server.handler.OAutomaticBackup">
+   <parameters>
+    <parameter name="enabled" value="false" />
+    <parameter name="delay" value="4h" />
+    <parameter name="target.directory" value="backup" />
+    <parameter name="target.fileName" value="${DBNAME}-${DATE:yyyyMMddHHmmss}.json" /><!-- ${DBNAME} AND ${DATE:} VARIABLES ARE SUPPORTED -->
+    <parameter name="db.include" value="" /><!-- DEFAULT: NO ONE, THAT MEANS ALL DATABASES. USE COMMA TO SEPARATE MULTIPLE DATABASE NAMES -->
+    <parameter name="db.exclude" value="" /><!-- USE COMMA TO SEPARATE MULTIPLE DATABASE NAMES -->
+   </parameters>
+  </handler>
+ </handlers>
+ <network>
+  <protocols>
+   <!-- Default registered protocol. It reads commands using the HTTP protocol and write data locally -->
+   <protocol implementation="com.orientechnologies.orient.server.network.protocol.binary.ONetworkProtocolBinary" name="binary" />
+   <protocol implementation="com.orientechnologies.orient.server.network.protocol.http.ONetworkProtocolHttpDb" name="http" />
+   <protocol implementation="com.orientechnologies.orient.server.network.protocol.distributed.ONetworkProtocolDistributed" name="distributed" />
+  </protocols>
+  <listeners>
+   <listener protocol="binary" port-range="2424-2430" ip-address="0.0.0.0" />
+   <listener protocol="http" port-range="2480-2490" ip-address="127.0.0.1">
+    <parameters>
+     <!-- Connection's custom parameters. If not specified the global configuration will be taken -->
+     <parameter name="network.http.charset" value="utf-8" />
+    </parameters>
+    <commands>
+     <command
+      pattern="GET|www GET|studio/ GET| GET|*.htm GET|*.html GET|*.xml GET|*.jpeg GET|*.jpg GET|*.png GET|*.gif GET|*.js GET|*.css GET|*.swf GET|*.ico GET|*.txt"
+      implementation="com.orientechnologies.orient.server.network.protocol.http.command.get.OServerCommandGetStaticContent">
+      <parameters>
+       <!-- Don't cache html resources in development mode -->
+       <entry name="http.cache:*.htm *.html" value="Cache-Control: no-cache, no-store, max-age=0, must-revalidate\r\nPragma: no-cache" />
+       <!-- Default caching -->
+       <entry name="http.cache:default" value="Cache-Control: max-age=120" />
+      </parameters>
+     </command>
+    </commands>
+   </listener>
+  </listeners>
+  <cluster>
+  </cluster>
+ </network>
+ <storages>
+  <!-- Default in-memory storage. Data are not saved permanently. -->
+  <storage path="memory:temp" name="temp" userName="admin" userPassword="admin" loaded-at-startup="true" />
+ </storages>
+ <users>
+ </users>
+ <properties>
+  <!-- Caches static contents. If enabled the files will be kept in memory the first time are loaded. Changes to the files will be taken on the next restart -->
+  <entry name="server.cache.file.static" value="false" />
+
+  <!-- Enable/Disable logging. Levels are: finer, fine, finest, info, warning -->
+  <entry name="log.console.level" value="info" />
+  <entry name="log.file.level" value="fine" />
+ </properties>
+</orient-server>
+}}}
+
+== Handlers ==
+Handlers are the way the OrientDB Server can be extended. Handlers are like plug-ins.
+
+To write your own plug-in read below [Extend_the_server Extend the server].
+
+Available handlers:
+ * [AutomaticBackup Automatic Backup]
+ * [DistributedServerManager Distributed Server Manager]
+
+== Protocols ==
+Contains the list of protocols used by the [#Listeners listeners section].
+The protocols supported today are:
+ * *binary*: the Raw binary protocol used by OrientDB clients and console application.
+ * *http*: the HTTP RESTful protocol used by OrientDB Studio and direct raw access from any language and browsers.
+
+== Listeners ==
+You can configure multiple listeners by adding items under the {{{<listeners>}}} tag and selecting the ip-address and TCP/IP port to bind. The protocol used must be listed in the [#Protocols protocols section]. Listeners can be configured with single port or port range. If a range of ports is specified, then it will try to acquire the first port available. If no such port is available, then an error is thrown.
+By default the Server configuration activates connections from both the protocols:
+ * *binary*: by default the binary connections are listened to the port range 2424-2430.
+ * *http*: by default the HTTP connections are listened to the port range 2480-2490.
+
+== Storages ==
+Contains the list of the static configured storages. When the server starts for each storages static configured storage enlisted check if exists. If exists opens it, otherwise creates it transparently.
+
+By convention all the storages contained in the $ORIENT_HOME/databases are visible from the OrientDB Server instance without the need of configure them. So configure storages if:
+ * are located outside the default folder. You can use any environment variable in the path such the ORIENT_HOME that points to the Orient installation path if defined otherwise to the root directory where the Orient Server starts.
+ * want to create/open automatically a database when the server start ups
+
+By default the *"temp"* database is always configured as in-memory storage useful to store volatile information.
+
+Example of configuration:
+{{{
+  <storage name="mydb" path="local:C:/temp/databases/mydb"
+           userName="admin" userPassword="admin"
+           loaded-at-startup="true" />
+}}}
+
+To create a new database use the [http://code.google.com/p/orient/wiki/ConsoleCommandCreateDb CREATE DATABASE console command] or create it dinamically using the [JavaAPI Java API].
+
+== Users ==
+Starting from v.0.9.15 OrientDB supports per-server users in order to protect sensible operations to the users. In facts the creation of a new database is a server operation as much as the retrieving of server statistics.
+
+=== Automatic password generation ===
+When an OrientDB server starts for the first time, a new user called "admin" will be generated and saved in the server configuration. This avoid security problems when, very often, the passwords remain the default ones.
+
+=== Resources ===
+User based authentication checks if the logged user has the permission to access to the requested resource. "*" means access to all the resource. This is the typical setting for the user "admin". Multiple resources must be separated by comma.
+
+Example to let to the "admin" user to access to all the server commands:
+
+{{{
+<user name="admin" resources="*" password="095F17F6488FF5416ED24E"/>
+}}}
+
+Example to let to the "guest" user to access only to the "info-server" command:
+
+{{{
+<user name="guest" resources="info-server" password="3489438DKJDK4343UDH76"/>
+}}}
+
+Supported resources are:
+ * {{{info-server}}}, to obtain statistics about the server
+ * {{{database.create}}}, to create a new database
+ * {{{database.exists}}}, to check if a database exists
+ * {{{database.delete}}}, to delete an existent database
+ * {{{database.share}}}, to share a database to another OrientDB Server node
+ * {{{database.passthrough}}}, to access to the hosted databases without database's authentication
+ * {{{server.config.get}}}, to retrieve a configuration setting value
+ * {{{server.config.set}}}, to set a configuration setting value
+
+== Create new user with some privileges ==
+To configure a new user open the *config/orientdb-server-config.xml* file and add a new XML tag under the tag {{{<users>}}}:
+
+{{{
+<users>
+  <user name="MyUser" password="MyPassword" resources="database.exists"/>
+  </users>
+}}}
+
+= Extend the server =
+OrientDB Server can be extended with custom *handlers*. A Handler is a class that implements the *[http://www.google.com/codesearch/p?hl=en#Q2eMNvxgD0M/trunk/server/src/main/java/com/orientechnologies/orient/server/handler/OServerHandler.java&q=OServerHandler%20package:http://orient%5C.googlecode%5C.com&sa=N&cd=1&ct=rc OServerHandler]* interface. There also is the *[http://www.google.com/codesearch/p?hl=en#Q2eMNvxgD0M/trunk/server/src/main/java/com/orientechnologies/orient/server/handler/OServerHandlerAbstract.java&q=OServerHandler%20package:http://orient%5C.googlecode%5C.com&d=10 OServerHandlerAbstract]* abstract class to extend. Example:
+
+{{{
+package orientdb.test;
+
+public class DistributedRecordHook extends OServerHandlerAbstract {
+  private boolean	log = false;
+
+  @Override
+  public void config(OServer oServer, OServerParameterConfiguration[] iParams) {
+    for (OServerParameterConfiguration p : iParams) {
+      if (p.name.equalsIgnoreCase("log"))
+        log = true;
+    }
+  }
+
+  @Override
+  public String getName() {
+    return "DistributedRecordHook";
+  }
+}
+}}}
+
+Once created register it to the server configuration in *orientdb-server-config.xml* file:
+
+{{{
+<orient-server>
+  <handlers>
+    <handler class="orientdb.test.DistributedRecordHook">
+      <parameters>
+        <parameter name="log" value="true"/>
+      </parameters>
+    </handler>
+  </handlers>
+  ...
+}}}
+
+Note that you can specify arbitrary parameters in form of name and value. Those parameters can be read by the *config()* method. In this example a parameter "log" is read.
+
+=== Include JARS in the classpath ===
+Remember to put the additional jar files under the *lib* folder of the server installation. For releases before 1.0rc4 you need to change the server.sh (or server.bat under MS Windows) including your additional classpath.
+
+== Creating a distributed change manager ==
+As more complete example let's create a distributed record manager by installing hooks to all the server's databases and push these changes to the remote client caches.
+
+{{{
+public class DistributedRecordHook extends OServerHandlerAbstract implements ORecordHook {
+  private boolean log = false;
+
+  @Override
+  public void config(OServer oServer, OServerParameterConfiguration[] iParams) {
+    for (OServerParameterConfiguration p : iParams) {
+      if (p.name.equalsIgnoreCase("log"))
+        log = true;
+    }
+  }
+
+  @Override
+  public void onAfterClientRequest(final OClientConnection iConnection, final byte iRequestType) {
+    if (iRequestType == OChannelBinaryProtocol.REQUEST_DB_OPEN)
+      iConnection.database.registerHook(this);
+    else if (iRequestType == OChannelBinaryProtocol.REQUEST_DB_CLOSE)
+      iConnection.database.unregisterHook(this);
+  }
+
+  @Override
+  public boolean onTrigger(TYPE iType, ORecord<?> iRecord) {
+    try {
+      if (log)
+        System.out.println("Broadcasting record: " + iRecord + "...");
+
+      OClientConnectionManager.instance().broadcastRecord2Clients((ORecordInternal<?>) iRecord, null);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return false;
+  }
+
+  @Override
+  public String getName() {
+    return "DistributedRecordHook";
+  }
+}
+}}}
+
+= Benchmarks =
+[DatabaseBenchmarks Benchmarks].
+
+= Roadmap =
+
+[http://code.google.com/p/orient/issues/list?can=2&q=db&colspec=ID+Type+Status+Priority+Milestone+Owner+Summary&cells=tiles Roadmap].
+
+[http://code.google.com/p/orient/wiki/Roadmap Roadmap wiki page]
+
+= History =
+
+[http://code.google.com/p/orient/source/browse/trunk/history-db.txt Change history].

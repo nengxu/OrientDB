@@ -1,0 +1,88 @@
+#summary Download
+#labels Featured
+<wiki:toc max_depth="4" />
+
+= Introduction =
+Once you've download OrientDB follow the [Installation Installation instructions].
+
+= Full distribution =
+== Official distribution ==
+Download *latest official release* at  [http://code.google.com/p/orient/downloads/list this page].
+
+== Last stable release ==
+This is the suggested download if want to install it in production and need a stable release. These packages don't contain the "demo" database. To create it just run the test suite with "ant test".
+ * Download directory [http://www.orientechnologies.com/listing/m2/com/orientechnologies/orientdb/1.0rc8/ OrientDB 1.0rc8 stable]
+  * Direct download for *ZIP*: http://www.orientechnologies.com/listing/m2/com/orientechnologies/orientdb/1.0rc8/orientdb-1.0rc8-distribution.zip
+  * Direct download for *TAR-GZ*: http://www.orientechnologies.com/listing/m2/com/orientechnologies/orientdb/1.0rc8/orientdb-1.0rc8-distribution.tar.gz
+  * Direct download for *TAR-BZ2*: http://www.orientechnologies.com/listing/m2/com/orientechnologies/orientdb/1.0rc8/orientdb-1.0rc8-distribution.tar.bz2
+
+== Latest Snapshot ==
+This is the suggested download if want to have and use the last version with all the new features and bugs fixed. Snapshot builds always compile and pass all the test cases. These packages don't contain the "demo" database. To create it just run the test suite with "ant test".
+
+ * *Last SNAPSHOT* directory: to get latest changes and improvements. Download the [https://oss.sonatype.org/content/groups/public/com/orientechnologies/ last snapshot]
+
+== From continuous integration ==
+This is the place where you can always find the last version automatically compiled from the SVN trunk:  http://datastorm.com.ua/jenkins/job/orient-svn-maven/
+
+= Via MAVEN repository =
+If you want to use OrientDB through Java the best and easy way is through Apache Maven. If you want to use the client/server version you need the [#Full_distribution Full distribution].
+
+Add this snippet in your pom.xml file:
+
+== Maven repository for stables ==
+{{{
+<repository>
+  <id>orientechnologies-repository</id>
+  <name>Orient Technologies Maven2 Repository</name>
+  <url>http://www.orientechnologies.com/listing/m2</url>
+  <snapshots>
+    <enabled>true</enabled>
+    <updatePolicy>always</updatePolicy>
+  </snapshots>
+</repository>
+}}}
+== Dependencies ==
+== Last stable ==
+{{{
+<dependency>
+  <groupId>com.orientechnologies</groupId>
+  <artifactId>orient-commons</artifactId>
+  <version>1.0rc8</version>
+  <type>bundle</type>
+</dependency>
+<dependency>
+  <groupId>com.orientechnologies</groupId>
+  <artifactId>orientdb-core</artifactId>
+  <version>1.0rc8</version>
+  <type>bundle</type>
+</dependency>
+}}}
+== Last snapshot (compiles and pass all the test cases) ==
+Snapshots are hosted on official Maven Sonatype.org repository.
+{{{
+<dependency>
+  <groupId>com.orientechnologies</groupId>
+  <artifactId>orient-commons</artifactId>
+  <version>1.0rc9-SNAPSHOT</version>
+  <type>bundle</type>
+</dependency>
+<dependency>
+  <groupId>com.orientechnologies</groupId>
+  <artifactId>orientdb-core</artifactId>
+  <version>1.0rc9-SNAPSHOT</version>
+  <type>bundle</type>
+</dependency>
+}}}
+== Add "bundle" artifact type to the list of Maven types ==
+{{{
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.felix</groupId>
+      <artifactId>maven-bundle-plugin</artifactId>
+      <version>2.3.6</version>
+      <extensions>true</extensions>
+    </plugin>
+  </plugins>
+</build>
+}}}

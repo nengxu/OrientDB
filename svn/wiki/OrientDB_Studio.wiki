@@ -1,0 +1,120 @@
+#summary OrientDB Studio web application
+#labels server
+
+<wiki:toc max_depth="4" />
+
+= Introduction =
+
+OrientDB Studio is a client-side web application built using HTML, CSS and jQuery. It executes commands against a OrientDB Server using the [OrientDB_REST OrientDB HTTP REST protocol] and Ajax calls. If you want to try it out, connect to the [http://www.moobilis.com:2480/ Online OrientDB Studio] with a demo database.
+
+=Getting Started=
+
+OrientDB server has a lightweight built-in HTTP server that responds REST JSON requests for managing data. It also provides the Studio admin interface which is based on JavaScript and it does not depend on any server-side templates.
+
+To get started, simply point your browser to [http://localhost:2480/]. The Studio provides a form for connecting to the server where you can provide both the URL and the database name to be used, the defaults being "localhost" and "demo", respectively.
+
+By default databases are created with users "admin", "writer" and "reader" where the password is equals to the name. If you've just created a new database login as admin/admin to have the full control of the database, but don't miss to change default passwords. For more information look at the Security page.
+
+= Database information =
+
+Once connected, the first "Database" tab contains information about currently-open database.
+
+== Schema ==
+
+Even though Orient is a schema-less database you can declare classes (similar to Relational tables) with properties. Each property can have constraints such as min, max, not null and mandatory. In this way you can have schema-less, full-schema or partial-schema class modes.
+
+The OrientDB Studio currently only supports adding and removing class properties. Creation of classes will be added at a future date.
+
+http://www.orientechnologies.com/images/orientdb-studio-schema.png
+
+== Structure ==
+
+This represents the [Concepts#Data_Segment Data segments], the [Concepts#Cluster Clusters] and the Transaction log segment that are part of the [Concepts#Storage Storage]. Each of the [Concepts#Cluster Clusters] contains records. If you see no records within a given cluster, it is most probable that you don't have the necessary authorization for this. Typically, cluster metadata is visible only to the "admin" user.
+
+http://www.orientechnologies.com/images/orientdb-studio-structure.png
+
+== Security ==
+
+Orient supports a flexible mechanism of user profiles. Each *user* can have one or more *roles*. Each *roles* can have multiple *rules*. Rule are comprised of the target *resource* and the operation allowed. Operations currently supported are:
+ * *NONE*, _no_ permission on the target resource
+ * *CREATE*, permission to _create_ the target resource
+ * *READ*, permission to _read_ the target resource
+ * *UPDATE*, permission to _update_ the target resource
+ * *DELETE*, permission to _delete_ the target resource
+ * *ALL*, _full_ permissions (all the permissions listed above)
+
+http://www.orientechnologies.com/images/orientdb-studio-security.png
+
+= Working with records =
+
+== Execute a query ==
+
+To execute a query against the database, type your request in the lower text area of the "Query" tab. The supported language is an extension of standard SQL. To see the full syntax look at [SQLQuery SQL Query language]. By default, the query result set is limited to 20 items. Set this to 0 to remove this limit but beware of large result sets; the reponse might be very slow on some browsers.
+
+http://www.orientechnologies.com/images/orientdb-studio-query.png
+
+== Live edit ==
+
+Once a query has been executed, you can edit the record content inline by clicking on the row of the table. When finished editing, just press the ENTER key and the record will be updated. Check the output message on the bottom of the page to make sure that the record has been updated correctly. To abort editing, press the ESC key.
+
+http://www.orientechnologies.com/images/orientdb-studio-editrecord.png
+
+== Delete a record ==
+
+Once a query has been successfully executed, you can delete a record by selecting it in the result table and pressing the "Delete" button. Check the output message on the bottom of the page to check that the record has been deleted correctly.
+
+== Create a new record ==
+
+Since Orient is a schema-less database you can create arbitrary fields in each record. To do this, use the [Execute_Raw_command Raw Command]. If you want to create a new record similar to an existing one, follow these steps:
+ * Execute a query against the class you want to create, e.g. profile
+ * Press the "New record" button and a new form will apear, showing the fields retrieved in the last query. Fill in the values and click on the "Submit" button. Make sure that you choose the class in the "class" field of the document record you're creating.
+
+http://www.orientechnologies.com/images/orientdb-studio-newrecord.png
+
+== Execute an arbitrary SQL command ==
+
+Although OrientDB is a NoSQL dbms, it supports a subset of SQL with some extensions to handle documents. The user must be authorized to execute SQL commands (check Users and Roles).
+
+ * [SQL Full syntax of SQL commands]
+ * [SQLWhere Quick reference of SQL operators]
+
+http://www.orientechnologies.com/images/orientdb-studio-command.png
+
+= Execute HTTP RESTful raw commands =
+
+OrientDB Studio uses the [OrientDB_REST OrientDB HTTP REST protocol] to communicate with OrientDB Server instances. You can execute any supported command against the Server directly using an Internet Browser (e.g. Mozilla Firefox, Google Chrome, Apple Safari, Microsoft Internet Explorer, etc.) or by using the "Raw Access".
+
+An example of a simple query executed at raw level is shown below. The results are always in [http://en.wikipedia.org/wiki/JSON JSON] format and appear in the middle of the page.
+
+http://www.orientechnologies.com/images/orientdb-studio-raw.png
+
+= Monitor the server status =
+
+To monitor the server status and all active connections, click on the tab "Server". 
+This is the first prototype of server console. Other interesting features will be added in the near future.
+
+== Active Connections ==
+
+This panel shows all active connections in real time. Each connection has attributes useful to monitor and tune the server:
+ * *Id*: a unique connection id. Ids are sequential.
+ * *Remote Client*: as remote ip address and port of the client
+ * *Database*: the database opened by the connection. HTTP connections acquire and release the database immediately, so this field will normally be empty
+ * *User*: the name of user using the database
+ * *Protocol*: *Binary-DB* means a binary connection such as Orient Console and pure Java clients; *HTTP-DB* means HTTP RESTful connections and the OrientDB Studio itself
+ * *Total requests*: the total number of requests handled by the connection. Usually, for HTTP connections this will be a small number since such connections die after a few seconds
+ * *Command Info*: the command the connection is executing. *Listening* means that the connection is waiting for a new command from the client
+ * *Command Detail*: if the connection is executing a command, this provides further details if any, e.g. the SQL query
+ * *Last Command When*: the date/time of the last executed command
+ * *Last Command Info*: the last command executed
+ * *Last Command Detail*: details, if any, of the last command executed
+ * *Last Execution Time*: the time in milliseconds for the last command executed
+ * *Total Working Time*: the total time in milliseconds spent for all the commands executed on this connection
+ * *Connected since*: the date-time when the connection was created
+
+http://www.orientechnologies.com/images/orientdb-studio-connections.png
+
+== Profiler ==
+
+Contains statistics and measurements about the internal state of OrientDB Server. This is useful for fine tuning.
+
+http://www.orientechnologies.com/images/orientdb-studio-profiler.png

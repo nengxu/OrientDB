@@ -1,0 +1,113 @@
+#summary How to Rexster-ify an OrientDB Blueprints-compliant Graph DB
+_This is a brief tutorial about the configuration of Rexster to work with an OrientDB Blueprints-compliant graph._
+
+<g:plusone size="medium"></g:plusone>
+
+<wiki:toc max_depth="4" />
+----
+= Introduction =
+
+== Rexster ==
+[https://github.com/tinkerpop/rexster/wiki/ Rexster] provides a RESTful shell to any Blueprints-complaint graph database. This HTTP web service provides: a set of standard low-level GET, POST, and DELETE methods, a flexible extension model which allows plug-in like development for external services (such as ad-hoc graph queries through Gremlin), and a browser-based interface called The Dog House.
+
+== OrientDB GraphEd ==
+The OrientDB Graph Edition, aka "Graph(Ed)", contains [http://www.orientechnologies.com/orient-db.htm OrientDB] server integrated with latest release of the [http://www.tinkerpop.com TinkerPop] Open Source technology stack as explained in [http://code.google.com/p/orient/wiki/GraphEdTutorial GraphEd Tutorial]. A graph database hosted in the GraphEd OrientDB server can be configured in Rexster and then accessed using the standard RESTful interface powered by the Rexster web server.
+----
+= Installation =
+
+You can get the latest stable release of Rexster at the [https://github.com/tinkerpop/rexster/downloads Download Page] (when writing the latest stable release is _0.4.1_) or you can build a snapshot by executing the following [http://git-scm.com/ Git] and [http://maven.apache.org/ Maven] commands:
+{{{
+git clone https://github.com/tinkerpop/rexster.git
+cd rexster
+mvn clean install
+}}}
+Rexster is distributed as a zip file (also the building process creates a zip file) hence the installation consist in unzipping the archive in a directory of your choice. In the following sections, such directory is referred to as _$REXSTER_HOME_.<br/>
+After unzipping the archive, you should copy _orient-client.jar_ and _orient-enterprise.jar_ in _$REXSTER_HOME/target/rexster-0.5-SNAPSHOT-standalone/lib_ picking the same release used in the Rexster distribution you have installed (for example Rexster 0.5-SNAPSHOT uses OrientDB 1.0rc3).<br/>
+You can find more details about Rexster installation at the [https://github.com/tinkerpop/rexster/wiki/Getting-Started Getting Started page].
+----
+= Configuration =
+
+Rexster configuration file _rexster.xml_ is used to configure parameters such as: TCP ports used by Rexster server modules to listen for incoming connections; character set supported by the Rexster REST requests and responses; connection parameters of graph instances.
+In order to configure Rexster to connect to your OrientDB graph, locate the _rexster.xml_ in the Rexster directory (in the O.5-SNAPSHOT version, it is at _$REXSTER_HOME/target/rexster-0.5-SNAPSHOT-standalone/bin_) and add the following snippet of code:
+{{{
+<rexster>
+  ...
+  <graphs>
+    ...
+    <graph>
+      <graph-enabled>true</graph-enabled>
+      <graph-name>my-orient-graph</graph-name>
+      <graph-type>orientgraph</graph-type>
+      <graph-file>url-to-your-db</graph-file>
+      <properties>
+        <username>user</username>
+        <password>pwd</password>
+      </properties>
+    </graph>
+  ...
+  </graphs>
+</rexster>
+}}}
+In the configuration file, there could be a sample `graph` element for an OrientDB instance (`<graph-name>orientdbsample<graph-name>`): you might edit it according to your needs.
+
+The `<graph-name>` element must be unique within the list of configured graphs and reports the name used to identify your graph.<br/>
+The `<graph-enabled>` element states whether the graph should be loaded and managed by Rexster. Setting its contents to `false` will prevent that graph from loading to Rexster; setting explicitly to `true` the graph will be loaded.<br/>
+The `<graph-type>` element reports the type of graph by using an identifier (`orientgraph` for an OrientDB Graph instance) or the full name of the class that implements the [https://github.com/tinkerpop/rexster/blob/master/src/main/java/com/tinkerpop/rexster/config/GraphConfiguration.java GraphConfiguration interface]
+(`[https://github.com/tinkerpop/rexster/blob/master/src/main/java/com/tinkerpop/rexster/config/OrientGraphConfiguration.java com.tinkerpop.rexster.config.OrientGraphConfiguration]` for an OrientDB Graph).
+
+The `<graph-file>` element reports the URL to the OrientDB database Rexster is expected to connect to:
+ * `local:_path-to-db_`, if the graph can be accessed over the file system (e.g. `local:/tmp/graph/db`)
+ * `remote:_url-to-db_`, if the graph can be accessed over the network and/or if you want to enable multiple accesses to the graph (e.g. `remote:db-host/db`)
+ * `memory:_db-name_`, if the graph resides in memory only. Updates to this kind of graph are never persistent and when the OrientDB server ends the graph is lost
+ 
+The `<username>` and `<password>` elements reports the credentials to access the graph (e.g. `admin` `admin`).<br/>
+You should indicate the location of the Rexster configuration file in the startup script _$REXSTER_HOME/rexster-start.bat_ or _$REXSTER_HOME/rexster-start.sh_ by adding the following parameter: `-configuration` _`path-to-rexster.xml`_
+For example, you should edit the startup script for Windows _rexster-start.bat_ in order to look as depicted in following snippet of code (the configuration parameter should be added to the last line of the script):
+{{{
+:: Windows launcher script for Rexster
+@echo on
+
+cd %CD%\target\
+
+set TARGET=
+
+for /f "tokens=*" %%a in ('dir /b /ad') do (
+if exist "%%a\bin\rexster-start.bat" set TARGET=%%a
+)
+
+cd %TARGET%\bin\
+call rexster-start.bat -webroot target/%TARGET%/bin/public %* -configuration D:\rexster-0.5-SNAPSHOT\target\rexster-0.5-SNAPSHOT-standalone\bin\rexster.xml
+}}}
+You can find more details about Rexster configuration at the [https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration Rexster Configuration page].
+----
+= Run =
+
+*Note: <font color="RED">only Rexster 0.5-SNAPSHOT and further releases work with OrientDB GraphEd</font>*<br/>
+In this section we present a step-by-step guide to Rexster-ify an OrientDB graph.<br/>
+We assume that:
+ * you created a Blueprints enabled graph called _orientGraph_ using the class `com.tinkerpop.blueprints.pgm.impls.orientdb.OrientGraph`
+ * you inserted in the Rexster configuration file a `<graph>` element with the `<graph-name>` element set to `my-orient-graph` and the `graph-file` element set to `remote:orienthost/orientGraph` (if you do not remember how to do this, go back to the [Rexster#Configuration Configuration] section).
+ # Be sure that the OrientDB server is running and you have properly configured the `<graph-file>` location and the access credentials of your graph.
+ # Execute the startup script (_$REXSTER_HOME/rexster-start.bat_ or _$REXSTER_HOME/rexster-start.sh_)
+ # The shell console appears and you should see the following log message (line 10 states that the OrientDB graph instance has been loaded):
+{{{
+[INFO] WebServer - .:Welcome to Rexster:.
+[INFO] GraphConfigurationContainer - Graph emptygraph - tinkergraph[vertices:0 edges:0] loaded
+[INFO] RexsterApplicationGraph - Graph [tinkergraph] - configured with allowable namespace [tp:gremlin]
+[INFO] GraphConfigurationContainer - Graph tinkergraph - tinkergraph[vertices:6 edges:6] loaded
+[INFO] RexsterApplicationGraph - Graph [tinkergraph-readonly] - configured with allowable namespace [tp:gremlin]
+[INFO] GraphConfigurationContainer - Graph tinkergraph-readonly - (readonly)tinkergraph[vertices:6 edges:6] loaded
+[INFO] RexsterApplicationGraph - Graph [gratefulgraph] - configured with allowable namespace [tp:gremlin]
+[INFO] GraphConfigurationContainer - Graph gratefulgraph - tinkergraph[vertices:809 edges:8049] loaded
+[INFO] GraphConfigurationContainer - Graph sailgraph - sailgraph[memorystore] loaded
+[INFO] GraphConfigurationContainer - Graph my-orient-graph - orientgraph[remote:orienthost/orientGraph] loaded
+[INFO] GraphConfigurationContainer - Graph neo4jsample -  not enabled and not loaded.
+[INFO] GraphConfigurationContainer - Graph dexsample -  not enabled and not loaded.
+[INFO] MapResultObjectCache - Cache constructed with a maximum size of 1000
+[INFO] WebServer - Web Server configured with com..sun..jersey..config..property..packages: com.tinkerpop.rexster
+[INFO] WebServer - No servlet initialization parameters passed for configuration: admin-server-configuration
+[INFO] WebServer - Rexster Server running on: [http://localhost:8182]
+[INFO] WebServer - Dog House Server running on: [http://localhost:8183]
+[INFO] ShutdownManager$ShutdownSocketListener - Bound shutdown socket to /127.0.0.1:8184. Starting listener thread for shutdown requests.
+}}}
+ # Now you can use [https://github.com/tinkerpop/rexster/wiki/Basic-REST-API Rexster REST API] and [https://github.com/tinkerpop/rexster/wiki/The-Dog-House The Dog House web application] to retrieve and modify the data stored in the OrientDB graph.

@@ -1,0 +1,27 @@
+#summary Supported types
+
+= Introduction =
+
+OrientDB supports several types natively. Below the complete table
+
+|| *Type* || *Description* || *Java type* || *Size in storage (in bytes)* || *Minimum* || *Maximum* || *Auto-conversion from/to* || *JSON format* ||
+|| String || Any string as alphanumeric sequence of chars || java.lang.String || variable 0-100,000 || - || - || - || Test ||
+|| Byte || Single byte. Useful to store small integers with range -128 to +127 || java.lang.Byte or byte || variable 0-4 || -128 || +127 || Any Number, String || 0 ||
+|| Short || Small integers with range -32,768 to 32,767 || java.lang.Short or short || variable 0-6 (it's transformed in String) || -32,768 || 32,767 || Any Number, String || 10000 ||
+|| Integer || Integers with range -2,147,483,648 to +2,147,483,647 || java.lang.Integer or int || variable 0-11 (it's transformed in String) || -2,147,483,648 || +2,147,483,647 || Any Number, String || 1000000 ||
+|| Long || Big integers with range -9,223,372,036,854,775,808 to +9,223,372,036,854,775,807 || java.lang.Long or long || variable 0-20 (it's transformed in String) || -9,223,372,036,854,775,808 || +9,223,372,036,854,775,807 || Any Number, String || 1000000000 ||
+|| Float || Decimal numbers || java.lang.Float or float || variable 0-? (it's transformed in String) || 1.4e-45f || 3.4028235e+38f || Any Number, String || 100000.33333 ||
+|| Decimal || Decimal numbers without rounding as for FLOAT and DOUBLE types. Perfect to handle money values || java.math.BigDecimal || variable 0-? (it's transformed in String) || 4.9e-324 || 1.7976931348623157e+308 || Any Number, String || 100000000000.33333333 ||
+|| Double || Decimal numbers with high precision || java.lang.Double or double || variable 0-? (it's transformed in String) || 4.9e-324 || 1.7976931348623157e+308 || Any Number, String || 10000000000.33333333 ||
+|| Boolean || Handles only the values _True_ or _False_ || java.lang.Boolean or boolean || 1 || 0 || 1 || String || true ||
+|| Date || Any date as year, month and day || java.util.Date || variable  || - || - || Date, Long, String || - ||
+|| Datetime || Any date with the precision up to milliseconds || java.util.Date || variable  || - || - || Date, Long, String ||
+|| Binary || Can contain any value as byte array || {{{byte[]}}} || variable || 0 || 2,147,483,647 || String || ||
+|| Link || Link to another Record. It's a common [Concepts#One-to-One One-to-One relationship]. Only the [Concepts#RecordID RecordId] is stored || {{{ORecord<?> instance}}} || 0-24 variable (it's transformed in String) || -1:-1 || 32767:9223372036854775807 || String || #10:3 ||
+|| Link list || Links to other Records. It's a common [Concepts#One-to-Many One-to-Many relationship]. Only the [Concepts#RecordID RecordId]s are stored || {{{List<? extends ORecord<?>>}}} || variable || 0 || 41,000,000 items || Collection<? extends ORecord<?>>, String || {{{[#10:3, #10:4]}}} ||
+|| Link set || Links to other Records. It's a common [Concepts#One-to-Many One-to-Many relationship]. Only the [Concepts#RecordID RecordId]s are stored || {{{Set<? extends ORecord<?>>}}} || variable || 0 || 41,000,000 items || Collection<? extends ORecord<?>>, String || {{{[#10:3, #10:4]}}} ||
+|| Link map || Links to other Records as value of the entries, while keys can only be Strings. It's a common [Concepts#One-to-Many One-to-Many relationship]. Only the [Concepts#RecordID RecordId]s are stored || {{{Map<String, ? extends ORecord<?>>}}} || variable || 0 || 41,000,000 items || String || { 'name' : '#10:3' } ||
+|| Embedded || The Record is contained inside the owner. The contained Record has no [Concepts#RecordID RecordId] || {{{ORecord<?> instance}}} || variable (it's transformed in String) || - || - || ORecord<?> ||
+|| Embedded list || The Records are contained inside the owner. The contained Records have no [Concepts#RecordID RecordId]s and are reachable only by navigating the owner Record || {{{List<Object>}}} || variable || 0 || 41,000,000 items || String || {{{[10, 20, 30]}}} ||
+|| Embedded set || The Records are contained inside the owner. The contained Records have no [Concepts#RecordID RecordId]s and are reachable only by navigating the owner Record || {{{Set<Object>}}} || variable || 0 || 41,000,000 items || Collection<? extends ORecord<?>>, String || {{{['this', 'is', 'a', 'test']}}} ||
+|| Embedded map || The Records are contained inside the owner as values of the entries, while the keys can only be Strings. The contained Records have no [Concepts#RecordID RecordId]s and are reachable only by navigating the owner Record || {{{Map<String, ?>}}} || variable || 0 || 41,000,000 items || Collection<? extends ORecord<?>>, String || { 'name' : 'Luca' } ||

@@ -1,0 +1,207 @@
+#summary Working with indexes
+<wiki:toc max_depth="4" />
+
+= Introduction =
+OrientDB supports indexes by using an innovative algorithm: the MVRB-Tree. It has the best of:
+ * *B+Tree* (the most used by RDBMS and NoSQL products) and
+ * *Red-Black Tree*
+
+This means fast insertion and update and super fast lookup.
+
+Indexes can be handled like classes (or tables for RDBMS users) using the SQL language and prefixing with "index:" the index name. The index is like a class (or table) with 2 properties:
+ * *key*, as the index's key
+ * *rid*, as the [Concepts#RecordId RecordId] that points to the record associated with the key
+== Index target ==
+Indexes can be *manual* or *automatic*. 
+Automatic indexes are automatically updated by OrientDB engine and are bound to schema properties, example "User.id". If you have a schema-less database and you want to create automatic index you need to create the class and the property before to use indexing.
+Manual indexes are handled by using SQL commands (see below) and can be used for arbitrary purposes.
+
+== Index types ==
+Indexes can be of these types. The type can't be changed once created:
+ * *UNIQUE*, doesn't allow duplicates. For composite index means uniqueness of composite keys.
+ * *NOTUNIQUE*, allows duplicates
+ * *FULLTEXT*, by indexing any single word of the text. It's used in query with the operator CONTAINSTEXT
+ * *DICTIONARY*, like UNIQUE but in case the key already exists replace the record with the new one
+
+== Dictionary ==
+Every single database has a default manual index of type "DICTIONARY" called "*dictionary*" with Strings as keys. This is very useful to:
+ * handle root records of trees and graphs
+ * handle singleton records used for configuration
+
+= Create an index =
+Creates a new index. To create an automatic index bound to a schema property use section "ON" of create index command or use as name the {{{<class.property>}}} notation. But assure to have created the schema for it before the index. See the example below.
+
+Syntax:
+{{{
+CREATE INDEX <name> [ON <class-name> (prop-names)] <type> [<key-type>]
+}}}
+Where:
+
+ * *name* logical name of index. Can be *{{{<class>.<property>}}}* to create an automatic index bound to a schema property. In this case *class* is the class of the schema and *property*, is the property created into the class. Notice that in another case index name can't contain '.' symbol
+ * *class-name* name of class that automatic index created for. Class with such name must already exist in database
+ * *prop-names* comma-separated list of properties for which automatic index is created for. Property with such name must already exist in schema. If property belongs to one of the Map types (LINKMAP, EMBEDDEDMAP) you can specify will be keys or values used for index generation. Use "by key" or "by value" expressions for that, if nothing will be specified keys will be used during index creation.  
+ * *type*, between 'unique', 'notunique' and 'fulltext'
+ * *key-type*, is the type of key (Optional). On automatic indexes is auto-determined by reading the target schema property where the index is created. If not specified for manual indexes, at run-time during the first insertion the type will be auto determined by reading the type of the class.
+
+Examples of custom index:
+{{{
+CREATE INDEX mostRecentRecords unique date
+}}}
+Examples of automatic index bound to the property "id" of class "User":
+{{{
+CREATE PROPERTY User.id STRING
+CREATE INDEX User.id UNIQUE
+}}}
+Another index for "id" property of class "User":
+{{{
+CREATE INDEX indexForId ON User (id) unique
+}}}
+Examples of index for "thumbs" property of class "Movie".   
+{{{
+CREATE INDEX thumbsAuthor ON Movie (thumbs) unique;
+CREATE INDEX thumbsAuthor ON Movie (thumbs by key) unique; 
+CREATE INDEX thumbsValue ON Movie (thumbs by value) unique; 
+}}}
+Example of composite index
+{{{
+CREATE PROPERTY Book.author STRING
+CREATE PROPERTY Book.title STRING
+CREATE PROPERTY Book.publicationYear INTEGER
+CREATE INDEX books ON Book (author, title, publicationYear) unique
+}}}
+
+For more information look at [SQLCreateIndex Create index command].
+
+= Drop an index =
+Drop definitely an index. Linked records will be not removed.
+Syntax:
+{{{
+DROP INDEX <name>
+}}}
+Where:
+
+ * *name* of the index to drop
+
+For more information look at [SQLRemoveIndex Drop index command].
+
+= Lookup =
+Returns all the records with the requested _key_.
+{{{
+select from index:<index-name> where key = <key>
+}}}
+Example:
+{{{
+select from index:dictionary where key = 'Luke'
+}}}
+= Put an entry =
+Inserts a new entry in the index with _key_ and _rid_.
+{{{
+insert into index:<index-name> (key,rid) values (<key>,<rid>)
+}}}
+Example:
+{{{
+insert into index:dictionary (key,rid) values ('Luke',#10:4)
+}}}
+= Query range =
+Retrieves the key ranges between _min_ and _max_.
+{{{
+select from index:<index-name> where key between <min> and <max>
+}}}
+Example:
+{{{
+select from index:coordinates where key between 10.3 and 10.7
+}}}
+= Remove entries by key =
+Deletes all the entries with the requested _key_. 
+{{{
+delete from index:<index-name> where key = <key>
+}}}
+Example:
+{{{
+delete from index:addressbook where key = 'Luke'
+}}}
+= Remove an entry =
+Deletes an entry by passing _key_ and _rid_. Returns true if removed, otherwise false if the entry wasn't found.
+{{{
+delete from index:<index-name> where key = <key> and rid = <rid>
+}}}
+Example:
+{{{
+delete from index:dictionary where key = 'Luke' and rid = #10:4
+}}}
+= Remove all references to a record =
+Removes all the entries with the _rid_ passed.
+{{{
+delete from index:<index-name> where rid = <rid>
+}}}
+Example:
+{{{
+delete from index:dictionary where rid = #10:4
+}}}
+= Count all the entries =
+Returns the size of the index as entries.
+{{{
+select count(*) as size from index:<index-name>
+}}}
+Example:
+{{{
+select count(*) as size from index:dictionary
+}}}
+= Retrieve all the keys =
+Retrieves all the keys of the index.
+{{{
+select key from index:<index-name>
+}}}
+Example:
+{{{
+select key from index:dictionary
+}}}
+= Retrieve all the entries =
+Retrieves all the entries of the index as pairs _key_ and _rid_.
+{{{
+select key, value from index:<index-name>
+}}}
+Example:
+{{{
+select key, value from index:dictionary
+}}}
+= Clear the index =
+Removes all the entries. The index will be empty after this call.
+This removes all the entries of an index.
+{{{
+delete from index:<index-name>
+}}}
+Example:
+{{{
+delete from index:dictionary
+}}}
+=Composite keys=
+You can do the same operations with composite indexes. 
+
+Composite key is a collection of values by its nature, so syntactically  it is defined as collection.
+For example, if we have class book, and index by its three fields: _author_, _title_ and _publication year_. So, we can use following query for lookup book:
+{{{
+select from index:books where key = ["Donald Knuth", "The Art of Computer Programming", 1968]
+}}}
+Or for lookup book with range of _publication year_:
+{{{
+select from index:books where key between ["Donald Knuth", "The Art of Computer Programming", 1960] and ["Donald Knuth", "The Art of Computer Programming", 2000]
+}}}
+==Partial match search==
+This is mechanism that allows searching index record by several first fields of its composite key. In this case rest fields with undefined value can have any value in result.
+
+For example, if we don't when book has been published, we can throw away _publication year_ field from query. So, result of following query will be all books with this _author_ and _title_ and any _publication year_
+{{{
+select from index:books where key = ["Author", "The Art of Computer Programming"]
+}}}
+If we also don't know _title_, we can keep only _author_ field in query. Result of following query will be all books of this _author_.
+{{{
+select from index:books where key = ["Donald Knuth"]
+}}}
+Or equivalent
+{{{
+select from index:books where key = "Donald Knuth"
+}}}
+
+==Direct insertion for composite indexes==
+Unsupported yet.

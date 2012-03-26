@@ -1,0 +1,32 @@
+#summary Production deployments
+
+= Introduction =
+
+_Since a lot of users are using OrientDB in production why don't collect them all in one page?_
+
+Are you using OrientDB in production? Please contribute to this list by writing an email to [mailto:deployments@orientechnologies.com deployments@orientechnologies.com].
+
+= NuvolaBase =
+http://www.nuvolabase.com/site/images/logo_hp.png
+
+[http://www.nuvolabase.com NuvolaBase] provides database as service in the Cloud. The entire infrastructure is based on OrientDB servers in clustered configuration. On December 2011 there were more than 150 users for a total of more than 200 databases.
+
+= Finance Solutions Of America =
+http://www.finsolamerica.com/assets/images/logo_header.jpg 
+
+[http://www.finsolamerica.com Finance Solutions Of America LLC] uses OrientDB for custom internal applications.<p>After researching the  landscape of various types of databases I ultimately chose OrientDB because of:</p><p><ul><li>*Licensing*: OrientDB uses the Apache 2.0 license which is extremely liberal. “Free for any use.” Running OrientDB with no upfront software cost can be a large win for companies on a budget who still want enterprise quality software.</li><li>*Data Analysis*: SQL syntax + gremlin graph traversal language = VERY powerful ways to explore, grow and analyze your graph.  Your limitations shift from your hardware and software to your imagination.</li><li>*Flexibility*: mixing schema-full/-mixed/-less allows you to arbitrarily add/remove criteria from your schema at will.  I found it to be a very easy and eye-opening transition from working with traditional SQL-based RDBMS.</li><li>*Performance*: refactoring code to use OrientDB has yielded impressive results.  Often on the order of 10-100+ times performance gain. Even modest servers will be able to outperform what you would normally expect of a database.</li><li>*Availability and stability*: Luca and the OrientDB community respond with lightning speed and are a pleasure to communicate with.  Bug-fixes can happen within hours to one day rather than several days/weeks/months.  The mail list is active with kind and helpful advice and there is commercial support available for those who require more specialized attention. Multi-master replication brings enterprise stability and redundancy to build very robust applications.</li></ul></p><p>I highly recommend this up and coming database to those interested in leveraging the power of document-graph technology or simply improving their existing application.</p><p>David Bloom, CTO Finance Solutions of America LLC
+
+= Asset Data =
+http://www.orientechnologies.com/images/asset_data.gif 
+
+[http://www.assetdata.it AssetData] uses OrientDB in production for two applications: [http://www.stresscorrelato.it Stess Correlato] and Trick a new Web CRM 100% client side using OrientDB as backend and Web Server<br/>*8108SCP (Stress Correlato):*<br/>_The scenario_<br/>8108SCP is a web application that evaluates, via objective and subjective questionnaires, the work related stress of a company based on its internal organization tree.<br/>_Why OrientDB?_<br/>Was needed an _Object Database_ free, fast and easily manageable due to continous domain refactoring. We also needed an easy way to search data by object references<br/>_The solution_<br/>We created a schema-full object database with OrientDB, using the Java API to insert,delete and retrieve data<br/>_Results_<br/>Right now the application manages a 1.5Gb database with more than 1,000,000 records. All database interactions (insert, delete, update and query), with indexed data, managed to be between 0 and 2 seconds the average operation time is 0.567221s. For example the retrieving of 1,290 questionnaires, result calculation and storing for each questionaire, and the creation of a set of 50-60 XML containing various aggregated data takes no more than 5 minutes.
+
+= Celi =
+http://www.celi.it/imgs/logo.gif
+
+[http://www.celi.it Celi] company is actually using OrientDB in three different ways:<br/>1) as a simple datastore for storing user's bookmarks: not so much records, but growing constantly every day<br/>2) as a document storage for a very specialized crawler: more than 100k documents, daily updates with 1k new docs. It allows us to incrementally add new docs in different format and incrementally analyse them. Documents are XML, DOC, PDF, stored as binary data. We are planning to replicate this deployment in upcoming projects.<br/>3) as the back end for the new inflected-form morphology service: in this scenario it is used most as a key value with a very high rate of requests since  the db for each single word in a text to be analyzed. The access to the db is backed by a cache on the client, but cache can't be too big. The system caches locally at least 50k entries, while the db has 1,4M entries. This way we have a centralized morphology service. Performance are quite similar to the locally deployed FSM-based. The analysis system runs distributed, so there are many clients querying the db at the same time with very high rate of requests.<br/>_Why OrientDB?_<br/>First, Orient give us a lot of flexibility on the data format. No schema, or at least a minimal schema, means no pain when adding new fields or new relations. Flexibility on query with different level of abstractions and apis: document, graph, binary. Flexibility on the way to interact with the db: java-api, SQL, text-console, REST interface. It's written in java and we have got a lot of java experience, on performance tuning too. So it's easy for us to tune the db, dive the code and share our knowledge to the community.
+
+= ForgeRock =
+http://www.forgerock.com/sites/default/files/forgerock_logo.png 
+
+[http://www.forgerock.com ForgeRock].The ForgeRock open platform strategy sets the standard for a secure and integrated platform that lets you leverage your IT infrastructure to reach the next level.<br/>OrientDB is the default DBMS bundled with the distribution.||

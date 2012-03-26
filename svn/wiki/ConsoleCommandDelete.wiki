@@ -1,0 +1,22 @@
+#summary Console command: delete
+#labels console,sql
+
+= Delete =
+
+Delete one or more records from the current database.
+
+== Syntax ==
+
+{{{delete from <class|cluster:<cluster>> [where <conditions>]}}}
+
+== Example ==
+
+{{{
+> delete from Profile where nick is null
+
+Deleted 123 record(s) in 0,012000 sec(s).
+}}}
+
+To know more about the SQL syntax used in Orient take a look to: [SQLQuery SQL Query].
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

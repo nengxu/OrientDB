@@ -1,0 +1,256 @@
+#summary Key/Value Server
+#labels kv,server,cluster
+
+http://www.orientechnologies.com/images/orient_kv_small.png
+
+<wiki:toc max_depth="4" />
+
+= Introduction =
+
+http://www.orientechnologies.com/images/orientkv-screenshoot-mid.png
+
+Orient Key/Value Server (KV-Server from now) has been built on top of [DocumentDatabase Orient Document Database]. The KV-Server is a multi-thread Java application that listen commands on a TCP/IP socket at the port 2431. The port can be changed in the [#Configuration configuration] file.
+
+Orient KV-Server groups key/value pairs inside buckets. If you come from the Relational DBMS world and you'd like to know how to use a Key/Value paradigm in place of the classic Relational one, take a look to the [KeyValueExample "Bucket/Key/Value paradigm as replacement of the Relational DBMS"].
+
+== Bucket ==
+All the entries are grouped in Buckets. Buckets are containers of entries. Using different buckets you can separate logically your entries in seperate containers.
+
+= Cluster =
+Orient Key/Value Server scales out very well in a cluster with thousands of running machines: Orient will divide the load among all the nodes. Cluster, by default, works in auto-discovery mode: when a node starts it attaches itself to the cluster if any. When a node goes down the cluster auto rebalances itself.
+
+http://www.orientechnologies.com/images/orientkv-cluster-ring.png
+
+http://www.orientechnologies.com/images/orientkv-cluster-work.png
+
+http://www.orientechnologies.com/images/orientkv-cluster-failover.png
+
+Orient uses [http://www.hazelcast.com Hazelcast] to handle the partitioned cluster among nodes. In the partitioned version Orient delegates to Hazelcast all the management of the distributed Map. Hazelcast envolves the OrientDB engine in these conditions:
+ * When an entry is not found, it <b>searches</b> the key in the OrientDB.
+ * When a new entry is <b>created</b>, it saves the entry also in the OrientDB. The write is synchronous.
+ * When an entry is <b>updated</b>, it saves the entry also in the OrientDB. The write is synchronous.
+ * When an entry is <b>deleted</b>, it deletes the entry also in the OrientDB. The delete is synchronous.
+
+= Start the server =
+== Start a single node server ==
+Execute the script {{{bin/orient-kv.sh}}} (or {{{bin/orient-kv.bat}}} in MS Windows systems). If the port 2431 is busy the next one will be taken. By default the range is 2431-2440 but you can change it in [#Single_machine_configuration configuration].
+
+== Start a clustered multi node server ==
+Execute the script {{{bin/orient-kv-partition.sh}}} (or {{{bin/orient-kv-partition.bat}}} in MS Windows systems). If the port 2431 is busy the next one will be taken. By default the range is 2431-2440 but you can change it in [#Multi-nodes_configuration configuration].
+
+During the start, the KV-Server searches for an available cluster using the configuration setted. If a cluster is found, then it attaches to it and the cluster network is re-configured to use the new server. If no one cluster is available, then a new network cluster is created with a single node until other nodes will attach to it.
+
+= Stop the server =
+CTRL+C or Soft kill of the process to be sure that the opened databases close softly.
+
+= Configuration =
+
+== Single machine configuration ==
+This is the content of the default <b>config/orient-kv.config</b> file contained in the distribution:
+
+{{{
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- Orient Key/Value Server configuration -->
+<orient-server>
+	<network>
+		<protocols>
+            <!-- Default registered protocol. It reads commands using the HTTP protocol and write data
+                 locally -->
+			<protocol name="http2local" implementation="com.orientechnologies.orient.kv.network.protocol.http.local.ONetworkProtocolHttpKVLocal" />
+		</protocols>
+		<listeners>
+            <!-- Default listener using the HTTP-2-LOCAL protocol bound to localhost, port 2431. If the port is busy
+                 then it will try to acquire the next one up to the 2440. -->
+			<listener ip-address="127.0.0.1" port-range="2431-2440" protocol="http2local" />
+		</listeners>
+	</network>
+	<storages>
+        <!-- Default in-memory storage. Data are not saved permanently. -->
+        <storage name="temp" path="memory:temp"/>
+	</storages>
+	<properties>
+        <!-- Set the asynchronous commit of the maps to the disk in persistent way. It the value is 0
+             or this property is not defined, the map is written synchronously to the disk.
+             If the value is major than 0 the maps will be written to disk every VALUE milliseconds -->
+        <entry name="asynch-commit-delay" value="5000" />
+	</properties>
+</orient-server>
+}}}
+
+== Multi-nodes configuration ==
+This is the content of the default <b>config/orient-kv-partition.config</b> file contained in the distribution:
+
+{{{
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- Orient Key/Value Server configuration -->
+<orient-server>
+    <handlers>
+      <handler class="com.orientechnologies.orient.kv.network.protocol.http.partitioned.OServerClusterMember" />
+    </handlers>
+	<network>
+		<protocols>
+            <!-- Default registered protocol. It reads commands using the HTTP protocol and write data
+                 to the Hazelcast maps. Hazelcast will propagate changes among the nodes depending of Hazelcast
+                 configuration (see hazelcast.xml file). Hazelcast then store clustered maps using the Orient
+                 MapStore implementation. -->
+			<protocol name="http2partitioned" implementation="com.orientechnologies.orient.kv.network.protocol.http.partitioned.ONetworkProtocolHttpKVPartitioned" />
+		</protocols>
+		<listeners>
+            <!-- Default listener using the HTTP-2-PARTITIONED protocol bound to localhost, port 2431. If the port is busy
+                 then it will try to acquire the next one up to the 2440. -->
+			<listener ip-address="127.0.0.1" port-range="2431-2440" protocol="http2partitioned" />
+		</listeners>
+	</network>
+	<storages>
+        <!-- Default in-memory storage. Data are not saved permanently. -->
+        <storage name="temp" path="memory:temp"/>
+	</storages>	
+	<properties>
+        <!-- Set the asynchronous commit of the maps to the disk in persistent way. It the value is 0
+             or this property is not defined, the map is written synchronously to the disk.
+             If the value is major than 0 the maps will be written to disk every VALUE milliseconds -->
+        <entry name="asynch-commit-delay" value="5000" />
+    </properties>
+</orient-server>
+}}}
+
+== Handlers ==
+Handlers between the available ones:
+ * com.orientechnologies.orient.kv.network.protocol.http.partitioned.OServerClusterMember: manages the server in a cluster
+
+== Protocols ==
+Contains the list of protocols used by the [#Listeners listeners section].
+The protocols supported today are:
+ * http2local: the default one for KV-Server
+ * http2partitioned: the distributed version for KV-Server
+ * binary: the raw binary protocol used by Orient DB Server
+
+== Listeners ==
+You can configure multiple listeners by adding items under the {{{<listeners>}}} tag and selecting the ip-address and TCP/IP port to bind. The protocol used must be listed in the [#Protocols protocols section].
+
+== Storages ==
+Contains the list of the configured storages. By default the petshop storage is added for testing purpose. You can use any envirnoment variable in the path such the ORIENT_HOME that points to the Orient installation path if defined otherwise to the root directory  where the KV Server starts.
+
+The create database command enlist a new storage in this section.
+
+== Cluster == 
+
+The cluster configuration, instead, is located in the <b>config/hazelcast.xml</b> file. This is the default one:
+
+{{{
+<hazelcast>
+	<group>
+		<name>orientkv</name>
+		<password>orient</password>
+	</group>
+	<network>
+		<port auto-increment="true">5701</port>
+		<join>
+			<multicast enabled="true">
+				<multicast-group>224.2.2.3</multicast-group>
+				<multicast-port>54327</multicast-port>
+			</multicast>
+			<tcp-ip enabled="false">
+				<interface>127.0.0.1</interface>
+			</tcp-ip>
+		</join>
+		<interfaces enabled="true">
+			<interface>127.0.0.1</interface>
+		</interfaces>
+		<symmetric-encryption enabled="false">
+			<!--
+				encryption algorithm such as DES/ECB/PKCS5Padding, PBEWithMD5AndDES, AES/CBC/PKCS5Padding, Blowfish, DESede
+			-->
+			<algorithm>PBEWithMD5AndDES</algorithm>
+			<!-- salt value to use when generating the secret key -->
+			<salt>thesalt</salt>
+			<!-- pass phrase to use when generating the secret key -->
+			<password>thepass</password>
+			<!-- iteration count to use when generating the secret key -->
+			<iteration-count>19</iteration-count>
+		</symmetric-encryption>
+		<asymmetric-encryption enabled="false">
+			<!-- encryption algorithm -->
+			<algorithm>RSA/NONE/PKCS1PADDING</algorithm>
+			<!-- private key password -->
+			<keyPassword>thekeypass</keyPassword>
+			<!-- private key alias -->
+			<keyAlias>local</keyAlias>
+			<!-- key store type -->
+			<storeType>JKS</storeType>
+			<!-- key store password -->
+			<storePassword>thestorepass</storePassword>
+			<!-- path to the key store -->
+			<storePath>keystore</storePath>
+		</asymmetric-encryption>
+	</network>
+	<executor-service>
+		<core-pool-size>16</core-pool-size>
+		<max-pool-size>64</max-pool-size>
+		<keep-alive-seconds>60</keep-alive-seconds>
+	</executor-service>
+	<queue name="default">
+		<!--
+			Maximum size of the queue. When a JVM's local queue size reaches the maximum, all put/offer operations will get blocked until the
+			queue size of the JVM goes down below the maximum. Any integer between 0 and Integer.MAX_VALUE. 0 means Integer.MAX_VALUE.
+			Default is 0.
+		-->
+		<max-size-per-jvm>10000</max-size-per-jvm>
+		<!--
+			Maximum number of seconds for each item to stay in the queue. Items that are not consumed in <time-to-live-seconds> will
+			automatically get evicted from the queue. Any integer between 0 and Integer.MAX_VALUE. 0 means infinite. Default is 0.
+		-->
+		<time-to-live-seconds>0</time-to-live-seconds>
+	</queue>
+	<map name="default">
+		<map-store enabled="true">
+			<!--
+				OrientDB implementation (www.orientechnologies.com). It's very fast, Open Source with Apache 2 license.
+			-->
+			<class-name>com.orientechnologies.orient.kv.network.protocol.http.partitioned.OMapLoaderStore</class-name>
+			<!--
+				Number of seconds to delay to call the MapStore.store(key, value). If the value is zero then it is write-through so
+				MapStore.store(key, value) will be called as soon as the entry is updated. Otherwise it is write-behind so updates will be
+				stored after write-delay-seconds value by calling Hazelcast.storeAll(map). Default value is 0.
+			-->
+			<write-delay-seconds>0</write-delay-seconds>
+		</map-store>
+		<!--
+			Number of backups. If 1 is set as the backup-count for example, then all entries of the map will be copied to another JVM for
+			fail-safety. Valid numbers are 0 (no backup), 1, 2, 3.
+		-->
+		<backup-count>1</backup-count>
+		<!--
+			Valid values are: NONE (no eviction), LRU (Least Recently Used), LFU (Least Frequently Used). NONE is the default.
+		-->
+		<eviction-policy>LRU</eviction-policy>
+		<!--
+			Maximum size of the map. When max size is reached, map is evicted based on the policy defined. Any integer between 0 and
+			Integer.MAX_VALUE. 0 means Integer.MAX_VALUE. Default is 0.
+		-->
+		<max-size>5000</max-size>
+		<!--
+			When max. size is reached, specified percentage of the map will be evicted. Any integer between 0 and 100. If 25 is set for
+			example, 25% of the entries will get evicted.
+		-->
+		<eviction-percentage>25</eviction-percentage>
+	</map>
+</hazelcast>
+}}}
+
+For more information visit the [http://www.hazelcast.com/documentation.jsp#Config Hazelcast page].
+
+= Try it =
+[http://moobilis.com:2431 Online demo]
+
+= Download and install it =
+[http://code.google.com/p/orient/downloads/list?can=2&q=kv+latest Download latest] and [KeyValueServerInstall install it].
+
+= Benchmarks =
+[KeyValueBenchmarks Benchmarks].
+
+= Roadmap =
+[http://code.google.com/p/orient/issues/list?can=2&q=kv&colspec=ID+Type+Status+Priority+Milestone+Owner+Summary&cells=tiles Roadmap].
+
+= History =
+[http://code.google.com/p/orient/source/browse/trunk/history-kv.txt Change history].

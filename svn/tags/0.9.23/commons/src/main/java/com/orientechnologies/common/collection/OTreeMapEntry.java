@@ -1,0 +1,423 @@
+/*
+ * Copyright 1999-2010 Luca Garulli (l.garulli--at--orientechnologies.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.orientechnologies.common.collection;
+
+import java.util.Map;
+
+@SuppressWarnings("unchecked")
+public abstract class OTreeMapEntry<K, V> implements Map.Entry<K, V> {
+	protected OTreeMap<K, V>	tree;
+
+	protected int							size										= 1;
+	protected int							pageSize;
+
+	protected K[]							keys;
+	protected V[]							values;
+	protected boolean					color										= OTreeMap.RED;
+
+	private int								pageSplitItems;
+	public static final int		BINARY_SEARCH_THRESHOLD	= 10;
+
+	/**
+	 * Constructor called on unmarshalling.
+	 * 
+	 */
+	protected OTreeMapEntry(final OTreeMap<K, V> iTree) {
+		this.tree = iTree;
+		init();
+	}
+
+	/**
+	 * Make a new cell with given key, value, and parent, and with <tt>null</tt> child links, and BLACK color.
+	 */
+	protected OTreeMapEntry(final OTreeMap<K, V> iTree, final K iKey, final V iValue, final OTreeMapEntry<K, V> iParent) {
+		this.tree = iTree;
+		setParent(iParent);
+		this.pageSize = tree.getPageSize();
+		this.keys = (K[]) new Object[pageSize];
+		this.keys[0] = iKey;
+		this.values = (V[]) new Object[pageSize];
+		this.values[0] = iValue;
+		init();
+	}
+
+	/**
+	 * Copy values from the parent node.
+	 * 
+	 * @param iParent
+	 * @param iPosition
+	 * @param iLeft
+	 */
+	protected OTreeMapEntry(final OTreeMapEntry<K, V> iParent, final int iPosition) {
+		this.tree = iParent.tree;
+		this.pageSize = tree.getPageSize();
+		this.keys = (K[]) new Object[pageSize];
+		this.values = (V[]) new Object[pageSize];
+
+		this.size = iParent.size - iPosition;
+		System.arraycopy(iParent.keys, iPosition, keys, 0, size);
+		System.arraycopy(iParent.values, iPosition, values, 0, size);
+		iParent.size = iPosition;
+
+		init();
+	}
+
+	public abstract void setLeft(OTreeMapEntry<K, V> left);
+
+	public abstract OTreeMapEntry<K, V> getLeft();
+
+	public abstract OTreeMapEntry<K, V> setRight(OTreeMapEntry<K, V> right);
+
+	public abstract OTreeMapEntry<K, V> getRight();
+
+	public abstract OTreeMapEntry<K, V> setParent(OTreeMapEntry<K, V> parent);
+
+	public abstract OTreeMapEntry<K, V> getParent();
+
+	protected abstract OTreeMapEntry<K, V> getLeftInMemory();
+
+	protected abstract OTreeMapEntry<K, V> getParentInMemory();
+
+	protected abstract OTreeMapEntry<K, V> getRightInMemory();
+
+	protected abstract OTreeMapEntry<K, V> getNextInMemory();
+
+	/**
+	 * Returns the first Entry only by traversing the memory, or null if no such.
+	 */
+	public OTreeMapEntry<K, V> getFirstInMemory() {
+		OTreeMapEntry<K, V> node = this;
+		OTreeMapEntry<K, V> prev = this;
+
+		while (node != null) {
+			prev = node;
+			node = node.getPreviousInMemory();
+		}
+
+		return prev;
+	}
+
+	/**
+	 * Returns the previous of the current Entry only by traversing the memory, or null if no such.
+	 */
+	public OTreeMapEntry<K, V> getPreviousInMemory() {
+		OTreeMapEntry<K, V> t = this;
+		OTreeMapEntry<K, V> p = null;
+
+		if (t.getLeftInMemory() != null) {
+			p = t.getLeftInMemory();
+			while (p.getRightInMemory() != null)
+				p = p.getRightInMemory();
+		} else {
+			p = t.getParentInMemory();
+			while (p != null && t == p.getLeftInMemory()) {
+				t = p;
+				p = p.getParentInMemory();
+			}
+		}
+
+		return p;
+	}
+
+	protected OTreeMap<K, V> getTree() {
+		return tree;
+	}
+
+	public int getDepth() {
+		int level = 0;
+		OTreeMapEntry<K, V> entry = this;
+		while (entry.getParent() != null) {
+			level++;
+			entry = entry.getParent();
+		}
+		return level;
+	}
+
+	/**
+	 * Returns the key.
+	 * 
+	 * @return the key
+	 */
+	public K getKey() {
+		return getKey(tree.pageIndex);
+	}
+
+	public K getKey(final int iIndex) {
+		if (iIndex >= size)
+			throw new IndexOutOfBoundsException("Requested index " + iIndex + " when the range is 0-" + size);
+
+		tree.pageIndex = iIndex;
+		return getKeyAt(iIndex);
+	}
+
+	protected K getKeyAt(final int iIndex) {
+		return keys[iIndex];
+	}
+
+	/**
+	 * Returns the value associated with the key.
+	 * 
+	 * @return the value associated with the key
+	 */
+	public V getValue() {
+		if (tree.pageIndex == -1)
+			return getValueAt(0);
+
+		return getValueAt(tree.pageIndex);
+	}
+
+	public V getValue(final int iIndex) {
+		tree.pageIndex = iIndex;
+		return getValueAt(iIndex);
+	}
+
+	protected V getValueAt(int iIndex) {
+		return values[iIndex];
+	}
+
+	/**
+	 * Replaces the value currently associated with the key with the given value.
+	 * 
+	 * @return the value associated with the key before this method was called
+	 */
+	public V setValue(final V value) {
+		V oldValue = this.getValue();
+		this.values[tree.pageIndex] = value;
+		return oldValue;
+	}
+
+	public int getFreeSpace() {
+		return pageSize - size;
+	}
+
+	@Override
+	public boolean equals(final Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof OTreeMapEntry<?, ?>))
+			return false;
+
+		final OTreeMapEntry<?, ?> e = (OTreeMapEntry<?, ?>) o;
+
+		return OTreeMap.valEquals(getKey(0), e.getKey(0)) && OTreeMap.valEquals(getValue(0), e.getValue(0));
+	}
+
+	@Override
+	public int hashCode() {
+		int keyHash = (keys == null ? 0 : keys.hashCode());
+		int valueHash = (values == null ? 0 : values.hashCode());
+		return keyHash ^ valueHash;
+	}
+
+	@Override
+	public String toString() {
+		if (keys == null)
+			return "?";
+
+		final StringBuilder buffer = new StringBuilder();
+
+		buffer.append(size);
+		buffer.append('[');
+		buffer.append(keys[0] != null ? keys[0] : "{lazy}");
+		buffer.append('-');
+		buffer.append(keys[size - 1] != null ? keys[size - 1] : "{lazy}");
+
+		buffer.append(']');
+
+		return buffer.toString();
+	}
+
+	/**
+	 * Execute a binary search between the keys of the node. The keys are always kept ordered. It update the pageIndex attribute with
+	 * the most closer key found (useful for the next inserting).
+	 * 
+	 * @param iKey
+	 *          Key to find
+	 * @return The value found if any, otherwise null
+	 */
+	protected V search(final Comparable<? super K> iKey) {
+		tree.pageItemFound = false;
+
+		if (size == 0)
+			return null;
+
+		// if (((Comparable) getKeyAt(size - 1)).compareTo(iKey) < 0) {
+		// CHECK THE LOWER LIMIT
+		tree.pageItemComparator = iKey.compareTo(getKeyAt(0));
+		if (tree.pageItemComparator == 0) {
+			// FOUND: SET THE INDEX AND RETURN THE NODE
+			tree.pageItemFound = true;
+			tree.pageIndex = 0;
+			return getValueAt(tree.pageIndex);
+
+		} else if (tree.pageItemComparator < 0) {
+			// KEY OUT OF FIRST ITEM: AVOID SEARCH AND RETURN THE FIRST POSITION
+			tree.pageIndex = 0;
+			return null;
+
+		} else {
+			// CHECK THE UPPER LIMIT
+			tree.pageItemComparator = iKey.compareTo(getKeyAt(size - 1));
+
+			if (tree.pageItemComparator > 0) {
+				// KEY OUT OF LAST ITEM: AVOID SEARCH AND RETURN THE LAST POSITION
+				tree.pageIndex = size;
+				return null;
+			}
+		}
+
+		if (size < BINARY_SEARCH_THRESHOLD)
+			return linearSearch(iKey);
+		else
+			return binarySearch(iKey);
+	}
+
+	/**
+	 * Linear search inside the node
+	 * 
+	 * @param iKey
+	 *          Key to search
+	 * @return Value if found, otherwise null and the tree.pageIndex updated with the closest-after-first position valid for further
+	 *         inserts.
+	 */
+	private V linearSearch(final Comparable<? super K> iKey) {
+		V value = null;
+		int i = 0;
+		tree.pageItemComparator = -1;
+		for (; i < size; ++i) {
+			tree.pageItemComparator = ((Comparable<Comparable<? super K>>) getKeyAt(i)).compareTo(iKey);
+
+			if (tree.pageItemComparator == 0) {
+				// FOUND: SET THE INDEX AND RETURN THE NODE
+				tree.pageItemFound = true;
+				value = getValueAt(tree.pageIndex);
+				break;
+			} else if (tree.pageItemComparator > 0)
+				break;
+		}
+
+		tree.pageIndex = i;
+
+		return value;
+	}
+
+	/**
+	 * Binary search inside the node
+	 * 
+	 * @param iKey
+	 *          Key to search
+	 * @return Value if found, otherwise null and the tree.pageIndex updated with the closest-after-first position valid for further
+	 *         inserts.
+	 */
+	private V binarySearch(final Comparable<? super K> iKey) {
+		int low = 0;
+		int high = size - 1;
+		int mid = 0;
+
+		while (low <= high) {
+			mid = (low + high) >>> 1;
+			Comparable<Comparable<? super K>> midVal = (Comparable<Comparable<? super K>>) getKeyAt(mid);
+			tree.pageItemComparator = midVal.compareTo(iKey);
+
+			if (tree.pageItemComparator == 0) {
+				// FOUND: SET THE INDEX AND RETURN THE NODE
+				tree.pageItemFound = true;
+				tree.pageIndex = mid;
+				return getValueAt(tree.pageIndex);
+			}
+
+			if (low == high)
+				break;
+
+			if (tree.pageItemComparator < 0)
+				low = mid + 1;
+			else
+				high = mid;
+		}
+
+		tree.pageIndex = mid;
+		return null;
+	}
+
+	protected void insert(final int iPosition, final K key, final V value) {
+		if (iPosition < size) {
+			// MOVE RIGHT TO MAKE ROOM FOR THE ITEM
+			System.arraycopy(keys, iPosition, keys, iPosition + 1, size - iPosition);
+			System.arraycopy(values, iPosition, values, iPosition + 1, size - iPosition);
+		}
+
+		keys[iPosition] = key;
+		values[iPosition] = value;
+		size++;
+	}
+
+	protected void remove() {
+		if (tree.pageIndex == size - 1) {
+			// LAST ONE: JUST REMOVE IT
+		} else if (tree.pageIndex > -1) {
+			// SHIFT LEFT THE VALUES
+			System.arraycopy(keys, tree.pageIndex + 1, keys, tree.pageIndex, size - tree.pageIndex - 1);
+			System.arraycopy(values, tree.pageIndex + 1, values, tree.pageIndex, size - tree.pageIndex - 1);
+		}
+
+		// FREE RESOURCES
+		keys[size - 1] = null;
+		values[size - 1] = null;
+
+		size--;
+		tree.pageIndex = -1;
+	}
+
+	protected void setColor(final boolean iColor) {
+		this.color = iColor;
+	}
+
+	public boolean getColor() {
+		return color;
+	}
+
+	public int getSize() {
+		return size;
+	}
+
+	public K getLastKey() {
+		return getKey(size - 1);
+	}
+
+	public K getFirstKey() {
+		return getKey(0);
+	}
+
+	protected void copyFrom(final OTreeMapEntry<K, V> iSource) {
+		keys = (K[]) new Object[iSource.keys.length];
+		for (int i = 0; i < iSource.keys.length; ++i)
+			keys[i] = iSource.keys[i];
+
+		values = (V[]) new Object[iSource.values.length];
+		for (int i = 0; i < iSource.values.length; ++i)
+			values[i] = iSource.values[i];
+
+		size = iSource.size;
+	}
+
+	public int getPageSplitItems() {
+		return pageSplitItems;
+	}
+
+	protected void init() {
+		pageSplitItems = (int) (pageSize * tree.pageLoadFactor);
+	}
+}

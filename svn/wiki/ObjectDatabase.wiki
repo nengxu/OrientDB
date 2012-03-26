@@ -1,0 +1,235 @@
+#summary Object Database usage through Java APIs
+#labels odbms,object,api,java
+
+http://www.orientechnologies.com/images/orient_db_small.png
+
+<wiki:toc max_depth="4" />
+
+= Introduction =
+The Orient Object DB works on top of the [DocumentDatabase Document Database] and it's able to treat Java objects without the use of pre-processor, byte enhancer or Proxy classes. It uses the simpler way: the Java Reflection. Please consider that the Java reflection in modern Java Virtual Machines is really fast and the discovering of Java meta data is made at first time. Future implementation could use the byte-code enhancement techniques in addition.
+
+Read more about the [Object2RecordJavaBinding Binding between Java Objects and Records].
+
+Quick example of usage:
+{{{
+// OPEN THE DATABASE
+ODatabaseObjectTx db = new ODatabaseObjectTx ("remote:localhost/petshop").open("admin", "admin");
+
+db.getEntityManager().registerEntityClasses("foo.domain");
+
+// CREATE A NEW ACCOUNT OBJECT AND FILL IT
+Account account = new Account()
+account.setName( "Luke" );
+account.setSurname( "Skywalker" );
+
+City rome = new City("Rome", new Country("Italy"));
+account.getAddresses().add(new Address("Residence", rome, "Piazza Navona, 1"));
+
+db.save( account );
+}}}
+== Connection Pool ==
+One of most common use case is to reuse the database avoiding to create it every time. It's also the typical scenario of the Web applications.
+{{{
+// OPEN THE DATABASE
+ODatabaseObjectTx db= ODatabaseObjectPool.global().acquire("remote:localhost/petshop", "admin", "admin");
+
+...
+
+db.close();
+}}}
+
+The close() method doesn't close the database but release it to the owner pool. It could be reused in the future.
+
+== Database URL ==
+
+In the example above a database of type Database Object Transactional has been created using the storage: remote:localhost/petshop. This address is a [http://it.wikipedia.org/wiki/Uniform_Resource_Locator URL]. To know more about database and storage types go to [Concepts#Database_URL Database URL].
+
+In this case the storage resides in the same computer of the client, but we're using the *remote* storage type. For this reason we need a Orient Server instance up and running. If we would open the database directly bypassing the server we had to use the *local* storage type such as "local:/usr/local/database/petshop/petshop" where, in this case, the storage was located in the /usr/local/database/petshop folder on the local file system.
+
+== Multi-threading ==
+
+The ODatabaseObjectTx class is non thread-safe. For this reason use different ODatabaseObjectTx instances by multiple threads. They will share local cache once transactions are committed.
+
+== Inheritance ==
+
+Starting from the release 0.9.19 OrientDB supports the [Inheritance]. Using the ObjectDatabase the inheritance of Documents fully matches the Java inheritance.
+
+Example:
+{{{
+public class Account {
+  private String name;
+}
+
+public class Company extends Account {
+  private int employees;
+}
+}}}
+
+When you save a Company object, OrientDB will save the object as unique Document in the cluster specified for Company class. When you search between all the Account instances with:
+{{{
+SELECT FROM account
+}}}
+
+The search will find all the Account and Company documents that satisfy the query.
+
+= Use the database =
+If you want to connect to a remote database using a OrientDB Server instance, you need to link the orient-client.jar in your classpath and to register the [http://code.google.com/p/orient/wiki/JavaAPI#Engines Remote Engine] in your client application by calling:
+{{{
+Orient.instance().registerEngine(new OEngineRemote());
+}}}
+
+Before to use a database you need to open it:
+{{{
+ODatabaseObject db = new ODatabaseObjectTx("remote:localhost/petshop").open("admin", "admin");
+}}}
+
+The database instance will share the connection versus the storage. if it's a local storage, then all the database instances will be synchronized on it. If it's a remote storage then the network connection will be shared among all the database instances.
+
+To get the reference to the current user use:
+{{{
+OUser user = db.getUser();
+}}}
+
+Once finished remember to close the database to free precious resources.
+{{{
+db.close();
+}}}
+
+= Working with POJO =
+
+Please read the [Object2RecordJavaBinding POJO binding guide] containing all the information about the management of POJO.
+
+== Work in schema-less mode ==
+
+The Object Database can be used totally in schema-less mode. Take a look to this example:
+
+{{{
+ODatabaseObject db = new ODatabaseObjectTx("remote:localhost/petshop").open("admin", "admin");
+
+Person p = new Person();
+p.setName( "Luca" );
+p.setSurname( "Garulli" );
+p.setCity( new City( "Rome", "Italy" ) );
+
+db.save( p );
+db.close();
+}}}
+
+This is the very first example. While the code it's pretty clear and easy to understand please note that we don't have declared the type "Person" before now. However Orient has been able to recognize the new object and save it in persistent way.
+
+== Work in schema-full mode ==
+
+In the schema-full mode you need to declare the classes you're using. Each class contains one or multiple properties. This mode is similar to the classic Relational DBMS approach where you need to create tables before to store records. To work in schema-full mode take a look to the [JavaSchemaAPI Schema APIs] page.
+
+== Create a new object ==
+Any Java object can be saved by calling the db.save() method. Note that the behaviour depends by the transaction begun if any. See [Transactions].
+
+{{{
+Animal animal = new Animal();
+animal.setName( "Gaudi" );
+animal.setLocation( "Madrid" );
+db.save( animal );
+}}}
+
+== Browse all the records in a cluster ==
+
+{{{
+for (Object o : database.browseCluster("CityCars")) {
+  System.out.println( ((Car) o).getModel() );
+}}}
+
+== Browse all the records of a class ==
+
+{{{
+for (Animal animal : database.browseClass(Animal.class)) {
+  System.out.println( animal.getName() );
+}}}
+
+== Count records of a class ==
+
+{{{
+long cars = database.countClass("Car");
+}}}
+
+== Count records of a cluster ==
+
+{{{
+long cityCars = database.countCluster("CityCar");
+}}}
+
+== Update an object ==
+
+Any persistent object can be updated using the Java language and then calling the db.save() method to synchronize the changes to the repository. Behaviour depends by the transaction begun if any. See [Transactions].
+
+{{{
+animal.setLocation( "Nairobi" );
+db.save( animal );
+}}}
+
+Orient will update only the fields really changed.
+
+Example of how to update the price of all the animals by 5% more:
+
+{{{
+for (Animal animal : database.browseClass(Animal.class)) {
+  animal.setPrice(animal.getPrice() * 105 / 100);
+  database.save(animal);
+}
+}}}
+
+== Delete an object ==
+To delete an object call the db.delete() method. Behaviour depends by the transaction begun if any. See [Transactions].
+
+{{{
+db.delete( animal );
+}}}
+
+Example of deletion of all the objects of class "Animal".
+
+{{{
+for (Animal animal : database.browseClass(Animal.class))
+  database.delete(animal);
+}}}
+
+= Execute a query =
+
+Orient supports two kinds of queries:
+ * Native
+ * SQL
+
+== Native query ==
+Native queries are written in Java code. They are pretty fast since the JVM compiles it as for the rest of application.
+
+Example:
+{{{
+List<ODocument> result = db.getUnderlying().command(
+  new ONativeSynchQuery<ODocument, OQueryContextNativeSchema<ODocument>>("Person",
+						new OQueryContextNativeSchema<ODocument>()) {
+    @Override
+    public boolean filter(OQueryContextNativeSchema<ODocument> iRecord) {
+      return iRecord.field("city").field("name").eq("Rome").and().field("name").like("G%").go();
+    };
+  }).execute();
+}}}
+
+== SQL query ==
+Although OrientDB is part of NoSQL databases, supports the SQL engine, or at least a subset of it with such extensions to work with objects and graphs.
+
+To know more about the SQL syntax supported go to: [SQLQuery SQL Query].
+
+Example:
+
+{{{
+List<Animal> result = db.query(
+  new OSQLSynchQuery<Animal>("select * from Animal where ID = 10 and name like 'G%'"));
+}}}
+
+=== SQL Commands ===
+To execute SQL commands use the {{{command()}}} method passing a OCommandSQL object:
+
+{{{
+int recordsUpdated = db.command(
+  new OCommandSQL("update Animal set sold = false")).execute();
+}}}
+
+See all the [SQL SQL Commands].

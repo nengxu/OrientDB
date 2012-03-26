@@ -1,0 +1,53 @@
+#summary Clustering and High Availability
+
+OrientDB can be distributed across different servers and used in different ways to achieve the maximum of performance, scalability and robustness.
+
+_NOTE: Release 1.0rc6 had a master-slave architecture while we're at good point for the new Multi-Master architecture to release in 1.0._
+
+= Presentations =
+[http://www.slideshare.net/lvca/orientdb-distributed-architecture-11 OrientDB distributed architecture 1.1]
+
+= Clustering =
+Clustering means to create a group of OrientDB Servers that share the same database instance. In this configuration always exist a *master* as principal node able to execute reads and writes operations. *Slaves* nodes are read-only replicas of the master database.
+
+There are two synchronization policies configurable per slave node:
+ * *synchronous*, the master propagates the change to the slave node waiting of the OK message before to continue. This works in serial for every single nodes configured in synchronous mode.
+ * *asynchronous*, the master propagates the change to the slave node without waiting for the response message. This is much faster than the synchronous mode. The cost of having multiple asynchronous nodes is close to zero.
+
+== Load balancing ==
+The simpler and most powerful way to achieve load balancing seems to use some hidden properties (hidden to someone) of DNS. The trick is to create a TXT record telling the list of servers.
+
+The format is:
+{{{v=opf<version> (s=<hostname[:<port>]> )*}}}
+
+Example of TXT record for domain *test.nuvolabase.com*:
+{{{v=opf1 s=s1.nuvolabase.com s=s2.nuvolabase.com:3434}}}
+
+In this way if you open a database against the URL {{{remote:test.nuvolabase.com/demo}}} the OrientDB client library will try to connect to the address *s1.nuvolabase.com* port 2424. If the connection fails, then the next address *s2.nuvolabase.com* port 3434 is tried.
+
+== Configure a cluster ==
+To enable the clustering between multiple servers you need to:
+ * put all the servers in the same network reachable via Multicast. If multicast is not available between nodes you can setup a VPN between the node of the cluster
+ * configure the [DistributedServerManager Distributed Server Manager handler] sharing the same name, algorithm and password between nodes
+
+== Share database ==
+Once the cluster is up and running you have to share a database to all the participants nodes through the [ConsoleCommandShareDatabase Share database console command] choosing between *synchronous* or *asynchronous* replication mode (see above).
+
+== Fail over ==
+http://www.orientechnologies.com/images/cluster-1.png
+
+http://www.orientechnologies.com/images/cluster-2.png
+
+http://www.orientechnologies.com/images/share-database.png
+
+http://www.orientechnologies.com/images/cluster-3.png
+
+http://www.orientechnologies.com/images/cluster-4.png
+
+http://www.orientechnologies.com/images/cluster-5.png
+
+= Sharding =
+
+= Future =
+
+ * [http://code.google.com/p/orient/issues/detail?id=508 Multi-master]

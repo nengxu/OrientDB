@@ -1,0 +1,26 @@
+#summary SQL Alter Cluster
+#labels SQL
+
+The *SQL Alter Cluster* command update a cluster.
+
+== Syntax ==
+
+{{{ALTER CLUSTER <cluster-name>|<cluster-id> <attribute-name> <attribute-value>}}}
+
+Where:
+ * *cluster-name* name of the cluster to modify
+ * *cluster-id* id of the cluster to modify
+ * *attribute-name* between those supported:
+  * *NAME* cluster's name
+ * *attribute-value* attribute's value to set
+
+== Examples ==
+{{{
+ALTER CLUSTER profile NAME profile2
+}}}
+
+{{{
+ALTER 9 profile NAME profile2
+}}}
+
+To know more about other SQL commands look at [SQL SQL commands].

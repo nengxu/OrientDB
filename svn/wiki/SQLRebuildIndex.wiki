@@ -1,0 +1,24 @@
+#summary SQL Rebuild Index
+#labels SQL
+
+The *SQL Rebuild Index* command rebuilds an automatic index.
+
+== Syntax ==
+
+{{{REBUILD INDEX <index-name>}}}
+
+Where:
+ * *index-name* name of the index. Use * to rebuild all the automatic indices
+
+== Examples ==
+{{{
+REBUILD INDEX Profile.nick
+}}}
+
+{{{
+REBUILD INDEX *
+}}}
+
+For complete index guide look at [Indexes Index guide].
+
+To know more about other SQL commands look at [SQL SQL commands].

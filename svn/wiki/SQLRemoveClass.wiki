@@ -1,0 +1,27 @@
+#summary SQL command: DROP CLASS
+#labels sql
+
+= Drop Class =
+
+The *SQL Drop Class* command removes a class from the schema. _NOTE: Pay attention to maintain the schema coherent. For example avoid to remove classes that are super classes of others. The associated cluster  won't be deleted._
+
+== Syntax ==
+
+{{{DROP CLASS <class>}}}
+
+Where:
+ * *class* is the class of the schema
+
+== Examples ==
+
+Remove the class 'Account':
+
+{{{DROP CLASS Account}}}
+
+To create a new class use the [SQLCreateClass Create Class] command.
+
+To drop the associated cluster use the [ConsoleCommandDropCluster Drop Cluster] command.
+
+To know more about other SQL commands look at [SQL SQL commands].
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

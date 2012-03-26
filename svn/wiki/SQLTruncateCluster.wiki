@@ -1,0 +1,23 @@
+#summary SQL command: TRUNCATE CLUSTER
+#labels SQL
+
+The *SQL Truncate Cluster* command deletes all the records of a cluster. This command acts at lower level then [SQLDelete SQL Delete Command].
+
+== Syntax ==
+{{{TRUNCATE CLUSTER <cluster-name>}}}
+
+Where:
+ * *cluster-name* is the name of the cluster
+
+== Examples ==
+Remove all the records in the cluster "Profile":
+
+{{{
+TRUNCATE CLUSTER Profile
+}}}
+
+See also [SQLDelete SQL Delete Command] and [SQLTruncateClass SQL Truncate Class] commands.
+
+To know more about other SQL commands look at [SQL SQL commands].
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

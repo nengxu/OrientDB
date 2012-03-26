@@ -1,0 +1,22 @@
+#summary SQL
+#labels sql
+
+Althought OrientDB is a NoSQL dbms, it supports SQL as language to execute queries and commands. The choice was made for the main reason that developers already know SQL and they feel more comfortable if start to use something familiar.
+
+Many SQL commands share the [SQLWhere WHERE conditions]. In these examples the SQL keyworks are in uppercase but OrientDB ignore the case when parses.
+
+Bear in mind that field names are case-sensitive. If you have a class !MyClass with a field named 'id', than sql statement {{{SELECT FROM MyClass WHERE ID = 1}}} will always return an empty result set. For the class names, case sensitivity doesn't hold so you can write them in any register.
+
+ * [SQLWhere SQL expression syntax] - [SQLWhere#Operators Operators] - [SQLWhere#Functions Functions]
+ * [SQLQuery SQL Select] used as command and for queries
+ * [SQLInsert SQL Insert] to insert new records
+ * [SQLUpdate SQL Update] to update one or more records
+ * [SQLDelete SQL Delete] to delete one or more records
+ * [SQLTruncateClass Truncate Class], [SQLTruncateCluster Truncate Cluster], [SQLTruncateRecord Truncate Record]
+ * [SQLGrant SQL Grant] and [SQLRevoke SQL Revoke]
+ * [SQLCreateClass Create Class], [SQLAlterClass Alter Class], [SQLRemoveClass Drop Class], [SQLCreateProperty Create Property], [SQLAlterProperty Alter Property], [SQLRemoveProperty Drop Property]
+ * [SQLCreateIndex Create Index], [SQLRebuildIndex Rebuild Index], [SQLRemoveIndex Drop Index]
+ * [SQLCreateLink Create Link]
+ * [SQLFindReferences SQL Find References]
+ * [SQLAlterDatabase Alter Database], [SQLAlterCluster Alter Cluster]
+ * [Pagination]

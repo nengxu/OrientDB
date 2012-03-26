@@ -1,0 +1,260 @@
+#summary Guide to improve performance based on the use case
+#labels Tuning
+<wiki:toc max_depth="4" />
+
+= Introduction =
+This guide contains the general tips to optimize your application that use the OrientDB. Below you can find links for the specific guides different per database type used.
+
+ * [PerformanceTuningDocument Document Database performance tuning]
+ * [PerformanceTuningObject Object Database performance tuning]
+ * [PerformanceTuningGraph Graph Database performance tuning]
+ * [PerformanceTuningBlueprints TinkerPop Blueprints Graph Database performance tuning]
+
+= General settings =
+
+== JVM settings ==
+The JVM settings suggested when you run your application that uses OrientDB are:
+{{{
+-server -XX:+AggressiveOpts -XX:CompileThreshold=200
+}}}
+== Configuration ==
+OrientDB can be configured in several ways. To know the current configuration use the console with the [ConsoleCommandConfig config command].
+
+To dump the OrientDB configuration you can set a parameter at JVM launch:
+
+{{{
+java -Denvironment.dumpCfgAtStartup=true ...
+}}}
+
+Or via API at any time:
+
+{{{
+OGlobalConfiguration.dumpConfiguration(System.out);
+}}}
+
+=== By command line ===
+{{{java -Dcache.size=10000 -Dstorage.keepOpen=true ...}}}
+=== By server configuration ===
+Put in the {{{<properties>}}} section of the file *orientdb-server-config.xml* the entries to configure. Example:
+{{{
+  ...
+  <properties>
+    <entry name="cache.size" value="10000" />
+    <entry name="storage.keepOpen" value="true" />
+  </properties>
+  ...
+}}}
+=== At run-time ===
+{{{
+  OGlobalConfiguration.MVRBTREE_NODE_PAGE_SIZE.setValue(2048);
+}}}
+=== Parameters ===
+To know more look at the Java enum: [http://code.google.com/p/orient/source/browse/trunk/core/src/main/java/com/orientechnologies/orient/core/config/OGlobalConfiguration.java OGlobalConfiguration.java].
+|| *Area* || *Parameter* || *Default 32bit* || *Default 64bit* || *Default Server 32bit* || *Default Server 64bit* || *Allowed input* || *Description* || *Since* ||
+||Environment||{{{environment.dumpCfgAtStartup}}}||true||true||true||true||true or false||Dumps the configuration at application startup||
+||Environment||{{{environment.concurrent}}}||true||true||true||true||true or false||Specifies if running in multi-thread environment. Setting this to false turns off the internal lock management||
+||Memory||{{{memory.optimizeThreshold}}}||0.85||0.85||0.85||0.85||0.5-0.95||Threshold of heap memory where to start the optimization of memory usage. Deprecated since 1.0rc7 ||
+||Storage||{{{storage.keepOpen}}}||true||true||true||true||true or false||Tells to the engine to not close the storage when a database is closed. Storages will be closed when the process will shutdown ||
+||Cache||{{{cache.level1.enabled}}}||true||true||false||false||true or false||Uses the level-1 cache||
+||Cache||{{{cache.level1.size}}}||-1||-1||0||0||-1 - N||Size of the Level-1 cache in terms of record entries. -1 means no limit but when the free Memory Heap is low then cache entries are freed||
+||Cache||{{{cache.level2.enabled}}}||true||true||false||false||true or false||Uses the level-2 cache||
+||Cache||{{{cache.level2.size}}}||-1||-1||0||0||-1 - N||Size of the Level-2 cache in terms of record entries. -1 means no limit but when the free Memory Heap is low then cache entries are freed||
+||Database||{{{db.mvcc}}}||true||true||true||true||true or false||Enable Multi Version Control Checking (MVCC) or not||
+||Database||{{{object.saveOnlyDirty}}}||false||false||false||false||true or false||Object Database saves only object bound to dirty records||
+||Database||{{{nonTX.recordUpdate.synch}}}||false||false||false||false||true or false||Executes a synch against the file-system at every record operation. This slows down records updates but guarantee reliability on unreliable drives||
+||Transaction||{{{tx.useLog}}}||true||true||true||true||true or false||Transactions use log file to store temporary data to being rollbacked in case of crash||
+||Transaction||{{{tx.log.fileType}}}||classic||classic||classic||classic||'classic' or 'mmap'||File type to handle transaction logs: mmap or classic||
+||Transaction||{{{tx.log.synch}}}||false||false||false||false||true or false||Executes a synch against the file-system for each log entry. This slows down transactions but guarantee transaction reliability on non-reliable drives||
+||Transaction||{{{tx.commit.synch}}}||false||false||true||true||true or false||Synchronizes the storage after transaction commit (see [#Disable_the_disk_synch Disable the disk synch])||
+||[GraphDatabaseTinkerpop TinkerPop Blueprints]||{{{blueprints.graph.txMode}}}||0||0||0||0||0 or 1||Transaction mode used in [GraphDatabaseTinkerpop TinkerPop Blueprints] implementation. 0 = Automatic (default), 1 = Manual||
+||MVRB Tree (index and dictionary)||{{{mvrbtree.lazyUpdates}}}||20000||20000||1||1||-1=Auto, 0=always lazy until express lazySave() is called by application, 1=No lazy, commit at each change. >1=Commit at every X changes||Configure the MVRB Trees (indexes and dictionaries) as buffered or not||
+||MVRB Tree (index and dictionary)||{{{mvrbtree.nodePageSize}}}||128||128||128||128||63-65535||Page size of each single node. 1,024 means that 1,024 entries can be stored inside a node||
+||MVRB Tree (index and dictionary)||{{{mvrbtree.loadFactor}}}||0.7f||0.7f||0.7f||0.7f||0.1-0.9||HashMap load factor||
+||MVRB Tree (index and dictionary)||{{{mvrbtree.optimizeThreshold}}}||200000||200000||200000||200000||10-N||Auto optimize the MVRB Tree every X operations as get, put and remove. -1=Auto (default)||
+||MVRB Tree (index and dictionary)||{{{mvrbtree.entryPoints}}}||16||16||16||16||1-200||Number of entry points to start searching entries||
+||MVRB Tree (index and dictionary)||{{{mvrbtree.optimizeEntryPointsFactor}}}||1.0f||1.0f||1.0f||1.0f||0.1-N|| Multiplicand factor to apply to entry-points list (parameter {{{mvrbtree.entrypoints}}}) to determine if needs of optimization||
+||MVRB Tree RIDs (index and dictionary)||{{{mvrbtree.ridBinaryThreshold}}}||8||8||8||8||-1 - N||Valid for set of rids. It's the threshold as number of entries to use the binary streaming instead of classic string streaming. -1 means never use binary streaming||
+||MVRB Tree RIDs (index and dictionary)||{{{mvrbtree.ridNodePageSize}}}||16||16||16||16||4 - N||Page size of each treeset node. 16 means that 16 entries can be stored inside each node||
+||MVRB Tree RIDs (index and dictionary)||{{{mvrbtree.ridNodeSaveMemory}}}||False||False||False||False||true or false||Save memory usage by avoid keeping RIDs in memory but creating them at every access||
+||Lazy Collections||{{{lazyset.workOnStream}}}||true||true||false||false||true or false||Work directly on streamed buffer to reduce memory footprint and improve performance||
+||File (I/O)||{{{file.lock}}}||false||false||true||true||true or false||Locks the used files so other process can't modify them||
+||File (I/O)||{{{file.defrag.strategy}}}||0||0||0||0||0,1||Strategy to recycle free space. 0=recycles the first hole with enough size (default): fast, 1=recycles the best hole: better usage of space but slower||
+||File (I/O)||{{{file.defrag.holeMaxDistance}}}||32768 (32Kb)||32768 (32Kb)||32768 (32Kb)||32768 (32Kb)||8K-N||Max distance in bytes between holes to execute the defrag of them. Set it to -1 to use dynamic size. Pay attention that is db is huge, then moving blocks to defrag could be expensive||
+||File (I/O)||{{{file.mmap.strategy}}}||0||0||0||0||0-4||Strategy to use with memory mapped files. 0 = USE MMAP ALWAYS, 1 = USE MMAP ON WRITES OR ON READ JUST WHEN THE BLOCK POOL IS FREE, 2 = USE MMAP ON WRITES OR ON READ JUST WHEN THE BLOCK IS ALREADY AVAILABLE, 3 = USE MMAP ONLY IF BLOCK IS ALREADY AVAILABLE, 4=NEVER USE MMAP||
+||File (I/O)||{{{file.mmap.blockSize}}}||1048576 (1Mb)||1048576 (1Mb)||1048576 (1Mb)||1048576 (1Mb)||10k-N||Size of the memory mapped block||
+||File (I/O)||{{{file.mmap.bufferSize}}}||8192 (8Kb)||8192 (8Kb)||8192 (8Kb)||8192 (8Kb)||1K-N||Size of the buffer for direct access to the file through the channel||
+||File (I/O)||{{{file.mmap.maxMemory}}}||134217728 (134Mb)||(maxOsMemory - maxProcessHeapMemory) / 2||134217728 (134Mb)||(maxOsMemory - maxProcessHeapMemory) / 2||100000-the maximum allowed by OS||Max memory allocable by memory mapping manager. Note that on 32bit OS the limit is to 2Gb but can change to OS by OS||
+||File (I/O)||{{{file.mmap.overlapStrategy}}}||2||2||2||2||0-2||Strategy when a request overlap in-memory buffers: 0 = Use the channel access, 1 = force the in memory buffer and use the channel access, 2 = always create an overlapped in-memory buffer (default)||
+||File (I/O)||{{{file.mmap.forceDelay}}}||500 (0.5sec)||500 (0.5sec)||500 (0.5sec)||500 (0.5sec)||100-5000||Delay time in ms to wait for another force flush of the memory mapped block to the disk||
+||File (I/O)||{{{file.mmap.forceRetry}}}||20||20||20||20||0-N||Number of times the memory mapped block will try to flush to the disk||
+||Networking (I/O)||{{{network.socketBufferSize}}}||32768||32768||32768||32768||8K-N||TCP/IP Socket buffer size||
+||Networking (I/O)||{{{network.timeout}}}||10000 (10secs)||10000 (10secs)||10000 (10secs)||10000 (10secs)||0-N||TCP/IP Socket timeout in ms, 0=no timeout||
+||Networking (I/O)||{{{network.retry}}}||5||5||5||5||0-N||Number of times the client connection retries to connect to the server in case of failure||
+||Networking (I/O)||{{{network.retryDelay}}}||500 (0.5sec)||500 (0.5sec)||500 (0.5sec)||500 (0.5sec)||1-N||Number of ms the client wait to reconnect to the server in case of failure||
+||Networking (I/O)||{{{network.binary.maxLength}}}||100000 (100Kb)||100000 (100Kb)||100000 (100Kb)||100000 (100Kb)||1K-N||TCP/IP max content length in bytes of BINARY requests||
+||Networking (I/O)||{{{network.binary.readResponse.maxTime}}}||30||30||30||30||0-N||Maximum time (in seconds) to wait until response will be read. Otherwise response will be dropped from chanel||1.0rc9||
+||Networking (I/O)||{{{network.binary.debug}}}||false||false||false||false||true or false||Debug mode: print all the incoming data on binary channel||
+||Networking (I/O)||{{{network.http.maxLength}}}||100000 (100Kb)||100000 (100Kb)||100000 (100Kb)||100000 (100Kb)||1000-N||TCP/IP max content length in bytes of HTTP requests||
+||Networking (I/O)||{{{network.http.charset}}}||utf-8||utf-8||utf-8||utf-8||Supported HTTP charsets||Http response charset||
+||Networking (I/O)||{{{network.http.sessionExpireTimeout}}}||60000 (1min)||60000 (1min)||60000 (1min)||60000 (1min)||0-N||Timeout to consider a http session expired in ms||
+||Profiler||{{{profiler.enabled}}}||false||false||false||false||true or false||Enable the recording of statistics and counters||
+||Profiler||{{{profiler.autoDump.interval}}}||0||0||0||0||0=inactive >0=time in seconds||Dumps the profiler values at regular intervals. Time is expressed in seconds||1.0rc8||
+||Profiler||{{{profiler.autoDump.reset}}}||true||true||true||true||true or false||Resets the profiler at every auto dump||1.0rc8||
+||Log||{{{log.console.level}}}||info||info||info||info||fine, info, warn, error||Console's logging level||
+||Log||{{{log.file.level}}}||fine||fine||fine||fine||fine, info, warn, error||File's logging level||
+||Client||{{{client.channel.minPool}}}||1||1||1||1||1-N||Minimum size of the channel pool||
+||Client||{{{client.channel.maxPool}}}||5||5||5||5||1-N||maximum size of the channel pool||
+||Server||{{{server.cache.file.static}}}||false||false||false||false||true or false||Cache static resources after loaded||
+||Server||{{{server.cache.http.static}}}||true||true||true||true||true or false||Cache static resources setting high cache expiration in HTTP headers||
+||Distributed cluster||{{{distributed.async.timeDelay}}}||0||0||0||0||0-N||Delay time (in ms) of synchronization with slave nodes. 0 means early synchronization||
+||Distributed cluster||{{{distributed.sync.maxRecordsBuffer}}}||100||100||100||100||0-10000||Maximum number of records to buffer before to send to the slave nodes||
+
+_NOTE: On 64-bit systems you have not the limitation of 32-bit systems with memory._
+
+== Memory optimization ==
+What can makes the difference is the right balancing between the heap and the virtual memory used by Memory Mapping, specially on large datasets (GBs, TBs and more) where the in memory cache structures count less than raw IO.
+
+For example if you can assign 4GB to the Java process, it could be better assigning small heap and large Virtual Memory. Rather than:
+
+{{{
+java -Xmx4g ...
+}}}
+You could instead try this:
+{{{
+java -Xmx800m -Dfile.mmap.maxMemory=3.2gb ...
+}}}
+
+The parameter *file.mmap.maxMemory* tells how much memory to use for the Memory Mapping at the storage level. The default value for 32-bit systems is very tiny (134 Mb) but with 32-bit architecture you have a lot of limitation and you need to pay attention to set it too large. On 64 bit systems I suggest to set it to: {{{( os tot memory - orientdb heap ) * 85%}}}. 85% should be reduced when you're running other memory expensive process on your OS.
+
+On 64 bit systems the default value is {{{(maxOsMemory - maxProcessHeapMemory) / 2}}}.
+
+_NOTE: If you use too much memory your system will goes in swap and the entire machine will slow down. Play with this parameter in order to find the best value for your configuration._
+
+== File System access strategy ==
+This is more technical. It tells to the storage engine the strategy to use when access to the file system. Previous versions always used the 0 strategy, namely uses Memory Mapping techniques for all. Mode 1 tells to use Memory Mapping but on reads only if there is room in memory, otherwise regular Java NIO file channel read will be used. The strategy 2 is more conservative since reads will use Memory Mapping only if the requested data has already been loaded in memory. The strategy 3 means use Memory Mapping until there is space in the pool, then use regular Java NIO file channel read/write. Strategy 4 means don't use Memory Mapping at all.
+
+By default the strategy 1 is used, but feel free to test the others to know what is the best for your use case.
+
+= Remote connections =
+There are many ways to improve performance when you access to the database using the remote connection.
+
+== Network Connection Pool ==
+Each client, by default, uses only one network connection to talk with the server. Multiple threads on the same client share the same network connection pool.
+
+When you've multiple threads could be a bottleneck since a lot of time is spent on waiting for a free network connection. This is the reason why is much important to configure the network connection pool.
+
+The configurations is very simple, just 2 parameters:
+
+ * *minPool*, is the initial size of the connection pool. The default value is configured as global parameters "client.channel.minPool" (see [#Parameters parameters])
+ * *maxPool*, is the maximum size the connection pool can reach. The default value is configured as global parameters "client.channel.maxPool" (see [#Parameters parameters])
+
+At first connection the *minPool* is used to pre-create network connections against the server. When a client thread is asking for a connection and all the pool is busy, then it tries to create a new connection until *maxPool* is reached.
+
+If all the pool connections are busy, then the client thread will wait for the first free connection.
+
+Example of configuration by using database properties:
+{{{
+database = new ODatabaseDocumentTx("remote:localhost/demo");
+database.setProperty("minPool", 2);
+database.setProperty("maxPool", 5);
+
+database.open("admin", "admin");
+}}}
+
+= Query =
+== Use Indexes ==
+The first improvement to speed up queries is to create [Indexes indexes] against the fields used in WHERE conditions. For example this query:
+{{{
+SELECT FROM Profile WHERE name = 'Jay'
+}}} 
+Browses the entire "profile" cluster looking for records that satisfy the conditions. The solution is to create an index against the 'name' property with:
+{{{
+CREATE INDEX profile.name UNIQUE
+}}}
+
+Use NOTUNIQUE instead of UNIQUE if the value is not unique.
+
+For more complex queries like
+{{{
+select * from testClass where prop1 = ? and prop2 = ?
+}}}
+Composite index should be used
+{{{
+CREATE INDEX compositeIndex ON testClass (prop1, prop2) UNIQUE
+}}}
+or via Java API:
+{{{
+oClass.createIndex("compositeIndex", OClass.INDEX_TYPE.UNIQUE, "prop1", "prop2");
+}}}
+Moreover, because of partial match searching, this index will be used for optimizing query like 
+{{{
+select * from testClass where prop1 = ?
+}}}
+
+For deep understanding of query optimization look at the unit test:
+http://code.google.com/p/orient/source/browse/trunk/tests/src/test/java/com/orientechnologies/orient/test/database/auto/SQLSelectIndexReuseTest.java
+
+== Avoid use of @rid in WHERE conditions ==
+Using *@rid* in where conditions slow down queries. Much better to use the [Concepts#RecordID RecordID] as target. Example:
+
+Change this:
+{{{
+SELECT FROM Profile WHERE @rid = #10:44
+}}}
+With this:
+{{{
+SELECT FROM #10:44
+}}}
+Also 
+{{{
+SELECT FROM Profile WHERE @rid IN [#10:44, #10:45]
+}}}
+With this:
+{{{
+SELECT FROM [#10:44, #10:45]
+}}}
+
+
+
+= Massive Insertion =
+== Use the Massive Insert intent ==
+Intents suggest to OrientDB what you're going to do. In this case you're telling to OrientDB that you're executing a massive insertion. OrientDB auto-reconfigure itself to obtain the best performance. When done you can remove the intent just setting it to null.
+
+Example:
+{{{
+db.declareIntent( new OIntentMassiveInsert() );
+
+// YOUR MASSIVE INSERTION
+
+db.declareIntent( null );
+}}}
+
+= Massive Updates =
+Updates generates "holes" at Storage level because rarely the new record fits perfectly the size of the previous one. Holes are free spaces between data. Holes are recycled but an excessive number of small holes it's the same as having a highly defragmented File System: space is wasted (because small holes can't be easily recycled) and performance degrades when the database growth.
+
+== Oversize ==
+If you know you will update certain type of records, create a class for them and set the Oversize (default is 0) to 2 or more.
+
+By default the OGraphVertex class has an oversize value setted at 2. If you define your own classes set this value at least at 2.
+
+OClass myClass = getMetadata().getSchema().createClass("Car");
+myClass.setOverSize(2);
+
+= Wise use of transactions =
+To obtain real linear performance with OrientDB you should avoid to use [Transactions] as far you can. In facts OrientDB keeps in memory all the changes until you flush it with a commit. So the bottleneck is your Heap space and the management of local transaction cache (implemented as a Map).
+
+[Transactions] slow down massive inserts unless you're using a "remote" connection. In that case it speeds up all the insertion because the client/server communication happens only at commit time.
+
+== Disable Transaction Log ==
+If you need to group operations to speed up remote execution in a logical transaction but renouncing to the Transaction Log, just disable it by setting the property *tx.useLog* to false.
+
+Via JVM configuration:
+{{{
+java ... -Dtx.useLog=false ...
+}}}
+or via API:
+{{{
+OGlobalConfiguration.TX_USE_LOG.setValue(false);
+}}}
+
+_NOTE: Please note that in case of crash of the JVM the pending transaction OrientDB could not be able to rollback it._

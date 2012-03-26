@@ -1,0 +1,89 @@
+#summary Fetching strategies
+
+Starting from release 0.9.20, OrientDB supports fetching strategies by using the *Fetch Plans*. Fetch Plans are used to customize how OrientDB must load linked records.
+
+Example:
+{{{
+Invoice
+ 3:100 
+   |
+   | customer
+   +---------> Customer
+   |            5:233
+   | address            city            country
+   +---------> Address---------> City ---------> Country
+   |            10:1             11:2             12:3
+   |
+   | orders
+   +--------->* [OrderItem OrderItem OrderItem]
+                [  8:12      8:19      8:23   ]
+}}}
+
+By default OrientDB loads all the linked records in lazy way. So in this example the linked "customer", "city" and "orders" fields are not loaded until are traversed. If you need the entire tree it could be slow the lazy loading of every single linked records. In this case it would need 7 different loads. If the database is open on a remote server they are 7 different network calls.
+
+This is the reason why OrientDB supports custom fetching strategies using the *Fetch Plans*.  The aim of fetch plans is to pre-load connected records in one shot.
+
+== Remote connection ==
+
+When a client executes a query (or load directly one single record) setting a fetch plan with level different to 0, then the server traverses all the records of the returning result set and sends them to the client in the same call.
+
+The client avoid to connect directly them to the record by using always the lazy collections (i.e.: OLazyRecordList). Instead, loads all the connected records into the local client. In this ways the collections remain lazy but when you're accessing to the content, the record is early loaded from the local cache avoiding other connections.
+
+== Format ==
+The fetch plan comes in form of a String and can be used at run-time on:
+ * query
+ * record loading
+
+The syntax is:
+
+{{{<fieldPath>:<depth-level>*}}}
+
+Where:
+ * *fieldPath*, is the field name path, expected in dot dotation, starting from the root record or the wildcard {{{*}}} for "any" field
+ * *depth-level*, is the deep level requested. 0 = Load only current record, 1-N = load only the first-Nth connected record. -1 = unlimited
+
+To express multiple rules separate them by spaces.
+
+Examples with the record tree above:
+ * {{{"*:-1"}}}: fetches the entire tree recursively
+ * {{{"*:-1 orders:0"}}}: fetches all the records recursevly but the "orders" field in root class. Note that in "orders" field will be loaded only its direct content (only records 8:12,8:19,8:23, none of other records inside them will be loaded).
+ * {{{"*:0 address.city.country:0"}}}: fetches only not-document fields in the root class and address.city.country field  (records 10:1,11:2,12:3).
+
+== Circular dependencies ==
+OrientDB handles circular dependencies avoid any loop while fetches linked records.
+
+== Example using the Java APIs ==
+
+=== Execute a query with a custom fetch plan ===
+{{{
+List<ODocument> resultset = database.query(new OSQLSynchQuery<ODocument>("select * from Profile").setFetchPlan("*:-1"));
+}}}
+
+=== Browse objects using a custom fetch plan ===
+{{{
+for (Account a : database.browseClass(Account.class).setFetchPlan("*:0 addresses:-1")) {
+  System.out.println( a.getName() );
+}
+}}}
+*Important:* fetching Object will mean their presence inside your domain entities. So if you load an object using fetchplan *:0 all LINK* type references won't be loaded.
+
+
+== Older versions ==
+=== v1.0rc7- ===
+*Format*
+
+The syntax is:
+
+{{{<[<class>.]field>:<depth-level>*}}}
+
+Where:
+ * *class*, optional, is the class that owns the {{{field}}}. If not specified, then all the fields called as {{{field}}} of any class traversed will be subject to the rule. *class* follows the object oriented inheritance, so if your class extends other classes (or implements interfaces) the rules are applyied recursively traversing the object inheritance
+ * *field*, is the field name or the wildcard {{{*}}} for "any" field
+ * *depth-level*, is the deep level requested. 0 = no load (therefore lazy-loading), 1-N = load only the first connected record. -1 = unlimited
+
+To express multiple rules separate them by spaces.
+
+Examples with the record tree above:
+ * {{{"*:-1"}}}: fetches the entire tree recursively
+ * {{{"*:-1 orders:0"}}}: fetches all the records but the "orders". Note that "orders" has no the prefix of the class, so any field named "orders" will be not loaded
+ * {{{"*:-1 City.country:0"}}}: fetches all the records but the country field of City class

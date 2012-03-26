@@ -1,0 +1,44 @@
+#summary Console command: export database
+#labels console
+
+= Export database =
+
+Export the current opened database to a file. The exported file is in [http://en.wikipedia.org/wiki/JSON JSON] format using the [ExportFormat Export format]. By default the file is compressed using the GZIP algorithm. The Export/Import commands allow to migrate between engine releases without loosing data. If you receive an error about the database version, export the database using the same version of OrientDB that has generated the database.
+
+Then [ConsoleCommandImport Import] it with the new one. The database will be imported and will be ready to be used.
+
+== Syntax ==
+
+{{{export database <output-file>}}}
+
+Where:
+
+ * output-file    Output file path
+
+== Example ==
+
+{{{
+> export database C:\temp\petshop.export
+Exporting current database to: C:\temp\petshop.export...
+
+Exporting database info...OK
+Exporting dictionary...OK
+Exporting schema...OK
+Exporting clusters...
+- Exporting cluster 'metadata' (records=11) -> ...........OK
+- Exporting cluster 'index' (records=0) -> OK
+- Exporting cluster 'default' (records=779) -> OK
+- Exporting cluster 'csv' (records=1000) -> OK
+- Exporting cluster 'binary' (records=1001) -> OK
+- Exporting cluster 'person' (records=7) -> OK
+- Exporting cluster 'animal' (records=5) -> OK
+- Exporting cluster 'animalrace' (records=0) -> OK
+- Exporting cluster 'animaltype' (records=1) -> OK
+- Exporting cluster 'orderitem' (records=0) -> OK
+- Exporting cluster 'order' (records=0) -> OK
+- Exporting cluster 'city' (records=3) -> OK
+Export of database completed.
+}}}
+
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

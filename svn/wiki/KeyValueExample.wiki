@@ -1,0 +1,67 @@
+#summary Bucket/Key/Value paradigm as replacement of the Relational DBMS
+#labels key-value,example,bucket
+
+= Bucket/Key/Value paradigm as replacement of the Relational DBMS =
+
+This example wants to demonstrate that it's possible and easy to use the Bucket/Key/Value approach even to build a complex application. In this example we're going to compare this new approach with the classic Relational DBMS way. In this article we use [http://www.orientechnologies.com/orient-kv.htm Orient Key/Value Server] but it can be applied to any other Key/Value engine that supports buckets.
+
+Why to use a Key/Value Server in favor to a Relational DBMS?
+ * Because it's faster dued to the reduced complexity of the model in comparison to the Relational
+ * It's schema-less and allow more flexibility when the domain model changes
+ * Easier to serialize records to write on file or send/receive over the network
+ * Easier to browse and debug, because you can use any Web Browser
+
+Before to start we remember the 3 basic concepts:
+
+ * Buckets: group the key/value pairs in a logical sense. A sort of collections of entries
+ * Keys: are the unique ids used to get/update/delete the associated value
+ * Values: are the values associated to the buckets/keys pair. Values can be any kind of documents
+
+In our example we'll use Buckets to group key/value entries by types. The role of the Key will be the same of the "Primary Key" in the Relational Model. Values will contain the record columns but in a unique field using the [http://www.json.org JSON] format.
+
+== Usage of the Bucket/Key/Value model ==
+
+{{{
+Bucket:customer
+ |
+ +-----> orient=Orient Technologies
+ +-----> google=Google Incorporated
+
+Bucket:order
+ |
+ +-----> last=3455
+ +-----> 3455={ "customer":"ibm",
+                "items" : [ {"stock":"32323", "quantity": 2},
+                            {"stock":"39494", "quantity": 5} ],
+                "total" : 320.00 }
+
+Bucket:stock
+ |
+ +-----> 32323={ "type":"keyboard", "model":"Logitech 222", quantity: 15 }
+ +-----> 39494={ "type":"mouse", "model":"Saitek ergo", quantity: 100 }
+}}}
+
+== Relationships ==
+
+Relationships are managed using the key of the target document. Look to the {{{order/3455}}}. It has the attribute "items" that is a collection of embedded objects. This is a regular 1-N relationship. In the Relational world they are the foreign keys on the target table, while here we have the relationships on the main object that lead the relationship direction. These embedded objects have the attribute "stock" that contains the relationship to the objects stored in the "stock" bucket.
+
+== Helper entries and buckets ==
+
+As you can see there is a key "last" in the bucket "order". This is a conventional key that indicates always the last order. In this way you can obtain the last order by asking:
+
+{{{HTTP GET http://localhost:8000/example/order/last}}}
+
+This key is just a helper entry. It could be useful create one or more helper buckets to store something like:
+ * all the orders to ship: {{{/orderToShip/}}}
+ * the user permissions by creating a new bucket foreach user group. It could be help to use prefix to distinguish it among the others. In the followinng example the prefix used is "user": {{{/user_admin/, /user_basic/, etc.}}}
+ * all the most recent entries updated. For example it could be useful to display the most recent articles in a CMS like application. The application is responsable to leave only X items
+
+== Write the application code ==
+
+The application can be written in any language because the Key/Value Server uses REST/HTTP. The entire application could be written in Javascript and run entirely on the Web Browser with Ajax calls to the Orient Key/Value Server instance.
+
+JSON documents are automatically converted in Javascript object trees. However there are a lot of [http://www.json.org JSON libraries for any programming language].
+
+The calls to the Key/Value Server can be asynchronous as well using asynchronous Ajax calls.
+
+What do you think about it? Comments are welcome.

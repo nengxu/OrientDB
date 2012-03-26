@@ -1,0 +1,49 @@
+#summary Console command: create database
+#labels console
+
+= Create database =
+
+Create a new database.
+
+== Syntax ==
+
+{{{create database <database-url> <user> <password> <storage-type>}}}
+
+Where:
+
+ * *database-url*   The url of the database to create in the format '{{{<mode>:<path>}}}'
+ * *user*           with local database is the database's user name, in remote database is the Server's administrator name
+ * *password*       with local database is the server's password, in remote database is the Server's administrator password
+ * *storage-type*   The type of the storage between 'local' for disk-based database and 'memory' for in memory only database.
+
+== Example: create a local database ==
+
+{{{
+> create database local:/usr/local/orient/databases/demo/demo admin admin local
+
+Creating database [local:/usr/local/orient/databases/demo/demo]...
+Connecting to database [local:/usr/local/orient/databases/demo/demo]...OK
+Database created successfully.
+
+Current database is: local:/usr/local/orient/databases/demo/demo
+}}}
+
+
+== Example: create a remote database ==
+
+{{{
+> create database remote:localhost/trick root E30DD873203AAA245952278B4306D94E423CF91D569881B7CAD7D0B6D1A20CE9 local
+
+Creating database [remote:localhost/trick ]...
+Connecting to database [remote:localhost/trick ]...OK
+Database created successfully.
+
+Current database is: remote:localhost/trick 
+}}}
+
+== Create a static database into the server configuration == 
+
+To create a static database to use it from the server look at: 
+[http://code.google.com/p/orient/wiki/DBServer#Storages Server configuration storages].
+
+This is a command of the Orient console. To know all the commands go to [ConsoleCommands Console commands].

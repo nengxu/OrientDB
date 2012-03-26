@@ -1,0 +1,255 @@
+#summary OrientDB Graph Edition first tutorial
+#labels graphdb
+_This is one page Tutorial. Follow the reported links to go in deep with the topic you're interested._
+
+<g:plusone size="medium"></g:plusone>
+
+<wiki:toc max_depth="4" />
+
+= Introduction =
+
+The Graph Edition, also called "Graph(Ed)", contains [http://www.orientechnologies.com/orient-db.htm OrientDB] server integrated with latest release of the [http://www.tinkerpop.com TinkerPop] Open Source technology stack:
+ * [http://wiki.github.com/tinkerpop/blueprints Blueprints] provides a collection of interfaces and implementations to common, complex data structures. In short, Blueprints provides a one stop shop for implemented interfaces to help developers create software without being tied to particular underlying data management systems.
+ * [http://wiki.github.com/tinkerpop/gremlin Gremlin] is a Turing-complete, graph-based programming language designed for key/value-pair multi-relational graphs. Gremlin makes use of an XPath-like syntax to support complex graph traversals. This language has application in the areas of graph query, analysis, and manipulation.
+ * [http://pipes.tinkerpop.com Pipes] is a graph-based data flow framework for Java 1.6+. A process graph is composed of a set of process vertices connected to one another by a set of communication edges. Pipes supports the splitting, merging, and transformation of data from input to output.
+
+No more pains when work with [http://www.tinkerpop.com TinkerPop] stuff on top of OrientDB. This integration allows (finally!) to use both the power of OrientDB SQL engine and [Gremlin GREMLIN] language. You can finally have the best of both worlds!
+
+=Download=
+Download the last version at the [http://code.google.com/p/orient/downloads/list Download Page] and select the file called *{{{orientdb-graphed*.zip}}}*, example: _orientdb-graphed-1.0rc3_.
+
+=Installation=
+To install it, just extract the contents of ZIP archive into a folder on your PC.
+== Requirements ==
+=== Operating System ===
+OrientDB runs on every operating system that has an implementation of Java Virtual Machine (JVM). These include:
+ * All Linux distributions
+ * Mac OS X
+ * Microsoft Windows from 95/NT onward
+ * Sun Solaris
+ * HP-UX
+ * IBM AIX
+=== Java Runtime Environment ===
+OrientDB requires Java SE 6 to be installed in order to deploy the Server component. Client applications can be written using Java SE 5.
+
+You can check which version of Java SE you have installed by typing "java -version" in a command shell (or a command prompt for Windows users):
+{{{
+> java -version
+
+java version "1.6.0_20"
+Java(TM) SE Runtime Environment (build 1.6.0_20-b02)
+Java HotSpot(TM) Client VM (build 16.3-b01, mixed mode, sharing)
+}}}
+
+To know more follow the [Installation] of OrientDB server.
+=Run!=
+==Starting the server==
+To start OrientDB server, go to the bin folder and run script *server.sh* for Unix-like operating system, or *server.bat* for Windows. You may have to set the execute permission on the script file before running it.
+{{{
+          .
+         .`        `
+         ,      `:.
+        `,`    ,:`
+        .,.   :,,
+        .,,  ,,,
+   .    .,.:::::  ````
+   ,`   .::,,,,::.,,,,,,`;;                      .:
+   `,.  ::,,,,,,,:.,,.`  `                       .:
+    ,,:,:,,,,,,,,::.   `        `         ``     .:
+     ,,:.,,,,,,,,,: `::, ,,   ::,::`   : :,::`  ::::
+      ,:,,,,,,,,,,::,:   ,,  :.    :   ::    :   .:
+       :,,,,,,,,,,:,::   ,,  :      :  :     :   .:
+ `     :,,,,,,,,,,:,::,  ,, .::::::::  :     :   .:
+ `,...,,:,,,,,,,,,: .:,. ,, ,,         :     :   .:
+   .,,,,::,,,,,,,:  `: , ,,  :     `   :     :   .:
+     ...,::,,,,::.. `:  .,,  :,    :   :     :   .:
+          ,::::,,,. `:   ,,   :::::    :     :   .:
+          ,,:` `,,.
+         ,,,    .,`
+        ,,.     `,                  GRAPH-DB Server
+      ``        `.
+                ``
+                `
+
+2011-07-15 04:29:05:720 INFO [OServer] OrientDB Server v1.0rc3 is starting up...
+2011-07-15 04:29:06:011 INFO [OServer] -> Loaded memory database 'temp'
+2011-07-15 04:29:06:093 INFO [OServerNetworkListener] Listening distributed connections on 127.0.0.1:2424
+2011-07-15 04:29:06:095 INFO [OServerNetworkListener] Listening http connections on 127.0.0.1:2480
+2011-07-15 04:29:06:104 INFO [OGraphServerHandler] Installing GREMLIN language v.1.2-SNAPSHOT
+2011-07-15 04:29:06:111 INFO [ODistributedServerManager] Generating Server security key and save it in configuration...
+2011-07-15 04:29:07:653 INFO [OServer] OrientDB Server v1.0rc3 is active.
+2011-07-15 04:29:10:653 WARN [ODistributedServerManager] Current node is the new cluster Leader of distributed nodes
+2011-07-15 04:29:10:655 INFO [ODistributedServerDiscoveryListener] Listening for distributed nodes on IP multicast /235.1.1.1:2424
+}}}
+== Running the console ==
+Once OrientDB is installed on your system, you can open the console by double-clicking on *console* script or by executing it from a command shell. The output should be like this:
+{{{
+OrientDB console v.1.0rc3 www.orientechnologies.com
+Type 'help' to display all the commands supported.
+
+Installing extensions for GREMLIN language v.1.2-SNAPSHOT
+
+>
+}}}
+Type *?* to show all the commands supported by the console. For more information about them, go to [ConsoleCommands]. By typing *?* command, output will be the following:
+{{{
+> ?
+AVAILABLE COMMANDS:
+
+* create database     Create a new database
+...
+* help                Print this help
+* exit                Close the console
+}}}
+==Connect to the tinkerpop database==
+You can now open the "tinkerpop" database shipped with the OrientDB Graph Edition by using the [ConsoleCommandConnect connect] command:
+{{{
+connect remote:localhost/tinkerpop admin admin
+}}}
+This will open the database located on the server just started using the administrator account. To know more about security look at [Security].
+
+OrientDB can run also in embedded mode. In this case turn off the server and open it using the "local" protocol, but remember that OrientDB Studio can't be used if no server is running.
+
+The "local" protocol is much faster because doesn't involve the network connection:
+
+{{{
+connect local:../databases/tinkerpop admin admin
+}}}
+
+For more information about the databases and the proper formats of URLs go [Concepts#Database here]. The output of the previous command should be the following:
+{{{
+> connect remote:localhost/tinkerpop admin admin
+Connecting to database [ remote:localhost/tinkerpop] with user 'admin'...OK
+}}}
+Once connected, you may view the information about the database by typing [ConsoleCommandInfo info] command:
+{{{
+> info
+Current database: tinkerpop (url=remote:localhost/tinkerpop)
+
+CLUSTERS:
+----------------------------------------------+------+---------------------+-----------+
+ NAME                                         |  ID  | TYPE                | RECORDS   |
+----------------------------------------------+------+---------------------+-----------+
+ internal                                     |     0| Physical            |         3 |
+ index                                        |     1| Physical            |        16 |
+ default                                      |     2| Physical            |         0 |
+ orole                                        |     3| Physical            |         3 |
+ ouser                                        |     4| Physical            |         3 |
+ ographvertex                                 |     5| Physical            |       809 |
+ ographedge                                   |     6| Physical            |      8049 |
+----------------------------------------------+------+---------------------+-----------+
+ TOTAL                                                                            8883 |
+---------------------------------------------------------------------------------------+
+
+CLASSES:
+----------------------------------------------+------+---------------------+-----------+
+ NAME                                         |  ID  | CLUSTERS            | RECORDS   |
+----------------------------------------------+------+---------------------+-----------+
+ OGraphVertex                                 |    2 | 5                   |       809 |
+ ORole                                        |    0 | 3                   |         3 |
+ OGraphEdge                                   |    4 | 6                   |      8049 |
+ OUser                                        |    1 | 4                   |         3 |
+----------------------------------------------+------+---------------------+-----------+
+ TOTAL                                                                           17722 |
+---------------------------------------------------------------------------------------+
+
+INDEXES:
+----------------------------------------------+------------+----+-----------+
+ NAME                                         | TYPE       |AUTO| RECORDS   |
+----------------------------------------------+------------+----+-----------+
+ edges                                        | NOTUNIQUE  | Y  |        89 |
+ vertices                                     | NOTUNIQUE  | Y  |       977 |
+ dictionary                                   | DICTIONARY | N  |         0 |
+----------------------------------------------+------------+----+-----------+
+ TOTAL = 3                                                             1066 |
+----------------------------------------------------------------------------+
+}}}
+
+A lot of stuff! This database has been loaded with the input file taken from [http://www.tinkerpop.com TinkerPop] project [https://raw.github.com/tinkerpop/blueprints/master/blueprints-test/src/main/resources/com/tinkerpop/blueprints/pgm/util/graphml/graph-example-2.xml graph-example-2.xml].
+
+The more relevant things are that we've 809 Vertices and 8049 Edges so it's a good training to get acquainted with GraphDBs.
+== Execute the first GREMLIN script ==
+To execute [Gremlin GREMLIN] scripts you can use the gremlin console (gremlin.sh/gremlin.bat) or OrientDB console by prefixing "gremlin" at the statement. Example to retrieve the first 10 vertices:
+{{{
+> gremlin g.V[0..9]
+
+[v[#5:0], v[#5:1], v[#5:2], v[#5:3], v[#5:4], v[#5:5], v[#5:6], v[#5:7], v[#5:8], v[#5:9]]
+
+Script executed in 0,049000 sec(s).
+}}}
+
+Want to know more about [Gremlin GREMLIN]? Follow this tutorial by [http://markorodriguez.com/ Marko Rodriguez]:
+
+<wiki:video url="http://www.youtube.com/watch?v=5wpTtEBK4-E" />
+
+=OrientDB Studio=
+==Login==
+Open a Web Browser and point it to *{{{http://localhost:2480}}}*. At login page select "tinkerpop" as database and "admin" as user and "admin" as password:
+
+[http://www.orientechnologies.com/images/graphed-tutorial-login.png]
+
+Once logged in the first page is the database description. You'll find  809 records in *OGraphVertex* class and 8,049 records in *OGraphEdge* class.
+
+[http://www.orientechnologies.com/images/graphed-tutorial-db.png]
+
+==Query==
+Click on the *OGraphVertex* class and then press the "*Query*" button.
+
+[http://www.orientechnologies.com/images/graphed-tutorial-query.png]
+
+These are all the vertices present in the current database in form of raw records. You can edit directly the fields of any records, press ENTER button, and the record/vertex/edge will be saved in a flash. 
+
+==Graph display==
+Now select the record #5:7 (the first column of the result set always contains the [http://code.google.com/p/orient/wiki/Concepts#RecordID Record Id]) and press the "*Graph*" button. This function displays the selected record as a graph. This is the output:
+
+[http://www.orientechnologies.com/images/graphed-tutorial-graph.png]
+
+==GREMLIN() SQL function==
+Now go back again into the "*Query*" tab to try the power of the integration between [Gremlin GREMLIN] and OrientDB SQL engine. Type this text as query text:
+{{{
+SELECT GREMLIN( 'current.out[0..3]' ) from V limit 2
+}}}
+
+"*V*" it's an implicit alias for *OGraphVertex* class and "*E*" for *OGraphEdge*. This simplify queries against graph elements. "*current*" variable in the [Gremlin GREMLIN] script stands for the current record retrieved by the SQL query. This is the output:
+
+[http://www.orientechnologies.com/images/graphed-tutorial-query2.png]
+
+==Command==
+If you want to use raw [Gremlin GREMLIN] click on the "*Command*" tab, select *GREMLIN* as language and type this text:
+{{{
+g.V[0..9]
+}}}
+
+That means "From the current Graph (*g* variable), get all the vertices (*V*) but return only the first 10.
+
+[http://www.orientechnologies.com/images/graphed-tutorial-command.png]
+
+In this case raw [Gremlin GREMLIN] engine will be called.
+
+=Java API=
+==GREMLIN() function==
+This function enriches the OrientDB's SQL language to execute a [Gremlin GREMLIN] statement for projections.
+
+Example: retrieve the first 3 out edges of the first 2 vertexes:
+
+{{{
+List<ODocument> resultset = db.query(new OSQLSynchQuery("SELECT GREMLIN( 'current.out[0..3]' ) as value from V limit 2"));
+}}}
+The [Gremlin GREMLIN] result will be contained inside the "value" field of the document retrieved.
+{{{
+resultset.get(0).field( "value" );
+}}}
+
+==GREMLIN command==
+The OCommandGremlin is a new class to execute [Gremlin GREMLIN] script. The usage is the same of SQL commands:
+
+{{{
+db.command(new OCommandGremlin("g.V[0..10]")).execute();
+}}}
+
+Where "*g*" is the variable that represents the current database.
+
+=Conclusion=
+To continue learning OrientDB Graph Edition look at these links:
+ * [Gremlin Gremlin usage]
+ * [ConsoleCommands Get acquainted with the console]

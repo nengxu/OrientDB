@@ -1,0 +1,56 @@
+#summary SQL Update
+#labels sql
+
+Update one or more records into the current database. Remember that Orient can work also in schema-less mode, so you can create any field at-the-fly. Furthermore OrientDB works on collection. This is the reason why the SQL has some extension to handle collections.
+
+== Syntax ==
+
+{{{UPDATE <class>|cluster:<cluster>> SET [[,] <field-name> = <field-value>]* [WHERE <conditions>]}}}
+
+For COLLECTIONS:
+
+{{{UPDATE <class>|cluster:<cluster>> [ADD|REMOVE] [[,] <field-name> = <field-value>]* [WHERE <conditions>]}}}
+
+For MAPS:
+
+{{{UPDATE <class>|cluster:<cluster>> [PUT|REMOVE] [[,] <field-name> = <map-key> [,<map-value>]]* [WHERE <conditions>]}}}
+
+Note that [Concepts#RecordID RecordID] must be prefixed with '#'. Example: #12:3.
+
+To know more about conditions look at [SQLWhere WHERE conditions].
+
+== Examples ==
+=== Example 1: change the value of a field ===
+{{{
+> update Profile set nick = 'Luca' where nick is null
+
+Updated 2 record(s) in 0,008000 sec(s).
+}}}
+=== Example 2: remove a field from all the records ===
+{{{
+> update Profile remove nick
+}}}
+=== Example 3: Add a value into a collection ===
+{{{
+> update Account add addresses = #12:0
+}}}
+=== Example 4: Remove a value from a collection ===
+{{{
+> update Account remove addresses = #12:0
+}}}
+=== Example 5: Put a map entry into a map ===
+{{{
+> update Account put addresses = 'Luca', #12:0
+}}}
+=== Example 6: Remove a value from a map ===
+{{{
+> update Account remove addresses = 'Luca'
+}}}
+=== Example 7: Update an embedded document ===
+Update command can take a JSON as value to update:
+{{{
+> update Account set address = { "street" : "Melrose Avenue", "city" : { "name" : "Beverly Hills" } }
+}}}
+
+
+To know more about the SQL syntax used in Orient take a look to: [SQLQuery SQL Query].

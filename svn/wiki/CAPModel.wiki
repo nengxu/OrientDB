@@ -1,0 +1,51 @@
+#summary CAP model
+
+= Introduction =
+
+Large distributed systems run into a problem which smaller systems don’t usually have to worry about. “Brewers CAP Theorem” defines this problem in a very simple way. It states, that though its desirable to have Consistency, High-Availability and Partition-tolerance in every system, unfortunately no system can achieve all three at the same time.
+
+Following the [http://en.wikipedia.org/wiki/CAP_theorem CAP theorem] OrientDB supports *{{{CA}}}* while OrientKV supports *{{{AP}}}*.
+
+== Consistency ==
+
+All nodes see the same data at the same time.
+
+"A fully Consistent system is one where the system can guarantee that once you store a state (lets say “x=y”) in the system, it will report the same state in every subsequent operation until the imagestate is explicitly changed by something outside the system."
+
+== Availability ==
+
+Node failures do not prevent survivors from continuing to operate.
+
+== Partition-tolerance ==
+
+The system continues to operate despite arbitrary message loss.
+
+= CAP model matrix =
+
+|| *Usage* || *(C)onsistency* || *(A)vailability* || *(P)artition-tolerance* ||
+|| Local database || Yes || No || No ||
+|| Remote database || Yes || No || No ||
+|| Remote clustered database || Yes || Yes || No ||
+|| Key/Value server || No || Yes || Yes ||
+
+= Disk-write strategies =
+
+Orient, by default, is configured for synchronous writes but depending by the OS file system management changes can be permanents only after the OS flushes the buffer into the disk. If you're using a transaction you're protect in case any crash happens when data are not written to the disk yet.
+
+For this reason Orient permits to change this policy.
+
+== Synchronize all changes to the disk when any single-record is changed ==
+
+By default is false.
+
+{{{
+database.getStorage().getConfiguration().txSegment.setSynchRecord(true);
+}}}
+
+== Synchronize all changes to the disk when a transaction is committed ==
+
+By default is true.
+
+{{{
+database.getStorage().getConfiguration().txSegment.setSynchTx(true);
+}}}

@@ -1,0 +1,90 @@
+#summary Orient Key/Value Server Benchmarks
+#labels kv,benchmark
+
+<wiki:toc max_depth="4" />
+
+= Introduction =
+
+Hey, I know. These are <b>micro benchmarks</b> and can't be taken as unique meter to compare products. However it's an index of the speed of the engine. Take it for what it is!
+
+= Scenario =
+
+These benchmarks are made using [http://httpd.apache.org/docs/2.0/programs/ab.html Apache Ab utility] in bundle with the distribution of Orient under the "benchmarks" folder.
+
+1 DELL Notebook model XPS M1530 with Intel(r) Core Duo T7700 2.40Ghz, 3 GB RAM and HD 5.400rpm, O.S. MS Windows Vista, JDK 1.6
+
+= Summary of the results =
+
+|| *Test type* || *Total requests* || *Concurrent clients/threads* || *Configuration* || *Total time elapsed* (less is better) || *Requests per second* (more is better) || *Version* ||
+|| HTTP GET on /petshop/demo/key-1 || 100,000 || 1 || Local Database || 7.98 seconds || 9,954 ||0.9.8 ||
+|| HTTP GET on /petshop/demo/key-1 || 100,000 || 2 || Local Database || 10.04 seconds || 12,521 ||0.9.8 ||
+|| HTTP GET on /petshop/demo/key-1 || 100,000 || 10 || Local Database || 8.58 seconds || 11,652 ||0.9.8 ||
+|| HTTP GET on /petshop/demo/key-1 || 100,000 || 50 || Local Database || 10.29 seconds || 9,709 ||0.9.8 ||
+|| HTTP GET on /petshop/demo/key-1 || 100,000 || 100 || Local Database || 10.67 seconds || 9,370 ||0.9.8 ||
+|| HTTP GET on /petshop/demo/key-1 || 100,000 || 100 || Partitioned Database (1 node) || 5.99 seconds || 16,677 ||0.9.8 ||
+
+As you can see:
+ * Orient Key/Value Server uses *both the processors* of the host machine hitting the record with 2 clients. The *multi-threading architecture* works well since multiple clients outperforms the serial requests (client=1).
+ * Even if the concurrent connections *growth up 50 times*, the loose of performance is minimum.
+
+= Detail of the tests =
+
+== HTTP GET 100.000 times, executed by 10 concurrent threads.
+
+{{{
+C:\work\dev\orientechnologies\orientdb\releases\0.9.5\benchmarks>ab -n100000 -k -c10 This is ApacheBench, Version 2.3 <$Revision: 655654 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient)
+Completed 10000 requests
+Completed 20000 requests
+Completed 30000 requests
+Completed 40000 requests
+Completed 50000 requests
+Completed 60000 requests
+Completed 70000 requests
+Completed 80000 requests
+Completed 90000 requests
+Completed 100000 requests
+Finished 100000 requests
+
+
+Server Software:        Orient
+Server Hostname:        127.0.0.1
+Server Port:            8020
+
+Document Path:          /petshop/demo/key-1
+Document Length:        12 bytes
+
+Concurrency Level:      2
+Time taken for tests:   7.986 seconds
+Complete requests:      100000
+Failed requests:        0
+Write errors:           0
+Keep-Alive requests:    100000
+Total transferred:      25300000 bytes
+HTML transferred:       1200000 bytes
+Requests per second:    12521.91 [#/sec] (mean)
+Time per request:       0.160 [ms] (mean)
+Time per request:       0.080 [ms] (mean, across all concurrent requests)
+Transfer rate:          3093.79 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       1
+Processing:     0    0   0.4      0      18
+Waiting:        0    0   0.4      0      18
+Total:          0    0   0.4      0      18
+
+Percentage of the requests served within a certain time (ms)
+  50%      0
+  66%      0
+  75%      0
+  80%      0
+  90%      1
+  95%      1
+  98%      1
+  99%      1
+ 100%     18 (longest request)
+}}}
