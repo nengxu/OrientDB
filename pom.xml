@@ -138,6 +138,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
+				<version>2.1</version>
 				<configuration>
 					<localCheckout>true</localCheckout>
 					<pushChanges>false</pushChanges>
@@ -268,9 +269,9 @@
 	</distributionManagement>
 
 	<scm>
-		<connection>scm:svn:http://orient.googlecode.com/svn/tags/1.0rc9</connection>
-		<developerConnection>scm:svn:https://orient.googlecode.com/svn/tags/1.0rc9</developerConnection>
-		<url>http://orient.googlecode.com/svn/tags/1.0rc9</url>
+		<connection>scm:svn:http://orient.googlecode.com/svn/trunk/</connection>
+		<developerConnection>scm:svn:https://orient.googlecode.com/svn/trunk/</developerConnection>
+		<url>http://orient.googlecode.com/svn/trunk/</url>
 	</scm>
 
 	<ciManagement>

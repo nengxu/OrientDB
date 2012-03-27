@@ -1,9 +1,0 @@
-#summary List of 3rd party plug-ins available for OrientDB
-
- * [https://github.com/megadix/orientdb-spring Spring Framework] integration, Apache 2 license
- * [http://wiki.apache.org/tomcat/OrientDBRealm Apache Tomcat realm] plugin by [mailto:jonathan.tellier@gmail.com Jonathan Tellier]
- * [http://www.playframework.org/modules/orientdb Play Framework plugin]
- * [http://code.google.com/p/data-storm/ EventStore for Axonframework], which uses fully transactional (full ACID support) NoSQL database OrientDB. [http://code.google.com/p/axonframework/ Axon Framework] helps build scalable, extensible and maintainable applications by supporting developers apply the Command Query Responsibility Segregation (CQRS) architectural pattern.
- * [https://wiki.shibboleth.net/confluence/display/SHIB2/OrientDB+Connector Shibboleth connector] by Jonathan Tellier. The [http://shibboleth.internet2.edu/ Shibboleth] System is a standards based, open source software package for web single sign-on across or within organizational boundaries. It allows sites to make informed authorization decisions for individual access of protected online resources in a privacy-preserving manner.
- * [https://github.com/pdlug/pacer-orient Pacer plugin] by Paul Dlug. [https://github.com/pangloss/pacer Pacer] is a [http://jruby.org/ JRuby]  graph traversal framework built on the Tinkerpop stack. This plugin enables full OrientDB graph support in Pacer.
- * [https://github.com/griffon/griffon-orientdb-plugin Griffon plugin], Apache 2 license

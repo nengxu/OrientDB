@@ -1,4 +1,0 @@
-#summary Presentations
-
- * [http://www.slideshare.net/lvca/orientdb-the-database-for-the-web-11 OrientDB the database for the Web 1.1]
- * [http://www.slideshare.net/lvca/orientdb-distributed-architecture-11 OrientDB distributed architecture 1.1]

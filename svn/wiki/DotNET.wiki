@@ -1,3 +1,0 @@
-#summary .NET driver for OrientDB
-
-= Introduction =

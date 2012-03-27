@@ -1,8 +1,0 @@
-#summary Google Summer Of Code initiative
-
-= Introduction =
-
-This pages contains all the ideas about OrientDB to being developed in Google Summer of Code initiative.
-
-== Distributed File System ==
-...
